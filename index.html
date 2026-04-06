@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบ Work From Home (WFH)</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f4f6f9;
+            overflow-x: hidden;
+        }
+        
+        /* Layout */
+        .wrapper {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: row;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            transition: all 0.3s;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 25px 20px 20px;
+            background: #1a252f;
+            text-align: center;
+            border-bottom: 1px solid #2c3e50;
+        }
+        .brand-logo {
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, #0d6efd, #00d2ff);
+            color: white;
+            border-radius: 18px; /* ทรงขอบมนแบบ Squircle */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 12px auto;
+            box-shadow: 0 6px 15px rgba(13, 110, 253, 0.4);
+            transition: all 0.3s ease;
+        }
+        .sidebar-header:hover .brand-logo {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(13, 110, 253, 0.5);
+        }
+        .brand-text {
+            font-size: 1.25rem;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+        .sidebar-menu {
+            padding: 15px 0;
+            flex-grow: 1;
+        }
+        .menu-item {
+            padding: 12px 20px;
+            color: #bdc3c7;
+            text-decoration: none;
+            display: block;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .menu-item:hover, .menu-item.active {
+            background: #34495e;
+            color: #fff;
+            border-left: 4px solid #3498db;
+        }
+        .menu-item i { width: 25px; }
+
+        /* Main Content Styling */
+        .main-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            width: calc(100% - 250px);
+        }
+        .header-banner {
+            background: #ffffff;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .content-area {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        /* View Control */
+        .app-view { display: none; animation: fadeIn 0.4s; }
+        .app-view.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Calendar UI */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; background: #ddd; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+        .calendar-cell { background: #fff; min-height: 80px; padding: 8px; cursor: pointer; user-select: none; transition: all 0.2s; position: relative; }
+        .calendar-cell.header { background: #f8f9fa; min-height: auto; text-align: center; font-weight: 600; padding: 10px; cursor: default; }
+        .calendar-cell:not(.header):not(.empty):hover { background: #f1f8ff; }
+        .calendar-cell.empty { background: #f8f9fa; cursor: default; }
+        .date-number { font-weight: 500; color: #333; }
+        .status-badge { font-size: 0.75rem; padding: 3px 6px; border-radius: 4px; display: inline-block; margin-top: 5px; width: 100%; text-align: center; color: #000; }
+        .status-Pending { background-color: #ffc107; }
+        .status-Approved { background-color: #198754; color: white; }
+        .status-Rejected { background-color: #dc3545; color: white; }
+        .calendar-cell.selected { background-color: #e0f0ff; border: 2px solid #0d6efd; }
+
+        .footer { background: #343a40; color: #fff; text-align: center; padding: 15px 0; width: 100%; }
+        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .wrapper { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; min-height: unset; flex-direction: row; flex-wrap: wrap; }
+            .sidebar-header { width: 100%; }
+            .sidebar-menu { display: flex; overflow-x: auto; white-space: nowrap; width: 100%; padding: 0; }
+            .menu-item { border-left: none; border-bottom: 4px solid transparent; }
+            .menu-item.active { border-left: none; border-bottom: 4px solid #3498db; }
+            .main-panel { width: 100%; }
+            .header-banner { flex-direction: column; text-align: center; gap: 15px; }
+            .calendar-cell { min-height: 60px; padding: 4px; }
+            .date-number { font-size: 0.9rem; }
+            .status-badge { font-size: 0.6rem; padding: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        <h4 class="mt-3">กำลังประมวลผล...</h4>
+    </div>
+
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-logo">
+                    <i class="fas fa-laptop-house"></i>
+                </div>
+                <h5 class="fw-bold brand-text">WFH System</h5>
+                <small class="text-info" style="font-size: 0.8rem;">ระบบ Work From Home</small>
+            </div>
+            <div class="sidebar-menu">
+                <a class="menu-item active" onclick="switchView('view-calendar', this)">
+                    <i class="fas fa-calendar-alt"></i> ปฏิทินคำขอ
+                </a>
+                <a class="menu-item" onclick="switchView('view-history', this)">
+                    <i class="fas fa-history"></i> ประวัติคำขอ WFH
+                </a>
+                <a class="menu-item text-warning" onclick="switchView('view-approval', this)">
+                    <i class="fas fa-user-tie"></i> สำหรับผู้อนุมัติ
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-panel">
+            <div class="header-banner">
+                <h4 class="mb-0 text-primary fw-bold" id="page-title" style="letter-spacing: 0.5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.05);">ปฏิทินยื่นเรื่อง</h4>
+                <div>
+                    <!-- User Identifier -->
+                    <div class="input-group input-group-sm" style="max-width: 250px;">
+                        <span class="input-group-text bg-light"><i class="fas fa-user"></i></span>
+                        <input type="text" id="global-identifier" class="form-control" placeholder="รหัสพนักงาน หรือ อีเมล">
+                        <button class="btn btn-primary" onclick="reloadData()"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                
+                <!-- VIEW 1: CALENDAR -->
+                <div id="view-calendar" class="app-view active">
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-end mb-2">
+                                <span class="badge bg-warning text-dark me-2"><i class="fas fa-clock"></i> Pending</span>
+                                <span class="badge bg-success me-2"><i class="fas fa-check-circle"></i> Approved</span>
+                                <span class="badge bg-danger"><i class="fas fa-times-circle"></i> Rejected</span>
+                            </div>
+                            <div class="calendar-header">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
+                                <h5 id="month-year-display" class="mb-0 fw-bold text-primary"></h5>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="changeMonth(1)">ถัดไป <i class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <p class="text-muted small mb-2"><i class="fas fa-info-circle"></i> Tip: คลิกลาก (Drag) เพื่อเลือกหลายวัน</p>
+                            
+                            <div class="calendar-grid" id="calendar-body"></div>
+
+                            <div class="text-center mt-4">
+                                <button class="btn btn-primary rounded-pill px-4 shadow" onclick="openWFHModal()" id="btn-request" disabled>
+                                    <i class="fas fa-paper-plane"></i> ยื่นเรื่อง WFH (0 วัน)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: HISTORY -->
+                <div id="view-history" class="app-view">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold text-secondary mb-3"><i class="fas fa-list"></i> ประวัติคำขอของฉัน</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>วันที่ยื่น</th>
+                                            <th>วันที่ WFH</th>
+                                            <th>เหตุผล</th>
+                                            <th>สถานะ</th>
+                                            <th>จัดการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="history-table-body">
+                                        <tr><td colspan="5" class="text-center text-muted py-4">กรุณาระบุรหัสพนักงานด้านบนเพื่อดูข้อมูล</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: MANAGER APPROVAL -->
+                <div id="view-approval" class="app-view">
+                    <div class="alert alert-warning border-0 shadow-sm">
+                        <i class="fas fa-info-circle"></i> <strong>ส่วนของหัวหน้างาน:</strong> กรุณาระบุ <b>"อีเมลของคุณ"</b> ในช่องด้านบนขวา แล้วกดโหลดข้อมูลเพื่อดูรายการที่รออนุมัติ
+                    </div>
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold text-warning mb-3"><i class="fas fa-tasks"></i> รายการรออนุมัติ</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>พนักงาน</th>
+                                            <th>แผนก</th>
+                                            <th>วันที่ขอ WFH</th>
+                                            <th>เหตุผล</th>
+                                            <th class="text-center">การตัดสินใจ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="approval-table-body">
+                                        <tr><td colspan="5" class="text-center text-muted py-4">ไม่มีรายการรออนุมัติ หรือ ยังไม่ได้ใส่อีเมล</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                Copyright © 2026 ระบบ Work From Home (WFH) | By มือใหม่หัดเดฟ
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ยื่นคำขอ -->
+    <div class="modal fade" id="wfhModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> ระบุรายละเอียด WFH</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2"><strong>วันที่เลือก:</strong> <span id="modal-dates-display"></span></div>
+                    <div class="mb-2"><label class="form-label">ชื่อ - นามสกุล</label><input type="text" class="form-control" id="form-name" required></div>
+                    <div class="row">
+                        <div class="col-6 mb-2"><label class="form-label">แผนก</label><input type="text" class="form-control" id="form-dept" required></div>
+                        <div class="col-6 mb-2"><label class="form-label">อีเมลของคุณ</label><input type="email" class="form-control" id="form-email" required></div>
+                    </div>
+                    <div class="mb-2"><label class="form-label">อีเมลหัวหน้า</label><input type="email" class="form-control" id="form-manager" required></div>
+                    <div class="mb-2"><label class="form-label">เหตุผลการขอ WFH</label><textarea class="form-control" id="form-reason" rows="2" required></textarea></div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-success" onclick="submitWFH()"><i class="fas fa-save"></i> ยืนยัน</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal แก้ไขเหตุผล -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-dark"><i class="fas fa-pencil-alt"></i> แก้ไขเหตุผล WFH</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-req-id">
+                    <div class="mb-3">
+                        <label class="form-label">เหตุผลใหม่</label>
+                        <textarea class="form-control" id="edit-reason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-warning" onclick="saveEdit()"><i class="fas fa-save"></i> บันทึกการแก้ไข</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- App Logic -->
+    <script>
+        // ==========================================
+        // ⚠️ สำคัญมาก: เปลี่ยน SCRIPT_URL ตรงนี้ ⚠️
+        // ==========================================
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-xxxxxx-EXAMPLE/exec"; 
+        
+        let currentDate = new Date();
+        let selectedDates = new Set();
+        let isDragging = false;
+        let employeeHistory = []; 
+        let currentView = 'view-calendar';
+
+        const thMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        const daysOfWeek = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+        const wfhModal = new bootstrap.Modal(document.getElementById('wfhModal'));
+        const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+
+        // --- 🚀 INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCalendar();
+            setupDragSelection();
+            
+            // Check URL Parameter for Email redirect (e.g. ?view=approval)
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            if(viewParam === 'approval') {
+                document.querySelector('.sidebar-menu a:nth-child(3)').click();
+                Swal.fire('ยินดีต้อนรับหัวหน้างาน', 'กรุณาระบุอีเมลของคุณที่มุมขวาบนเพื่อดูรายการรออนุมัติ', 'info');
+            }
+        });
+
+        // --- 🗂️ VIEW CONTROLLER ---
+        function switchView(viewId, el) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            if(el) el.classList.add('active');
+            
+            currentView = viewId;
+            const titles = { 'view-calendar':'ปฏิทินยื่นเรื่อง', 'view-history':'ประวัติคำขอ', 'view-approval':'สำหรับผู้อนุมัติ' };
+            document.getElementById('page-title').innerText = titles[viewId];
+
+            reloadData();
+        }
+
+        // --- 📡 DATA FETCHING (JSONP) ---
+        function callGAS_JSONP(action, paramsObj) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'jsonp_cb_' + Math.round(100000 * Math.random());
+                window[callbackName] = function(data) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(data);
+                };
+                paramsObj.action = action;
+                paramsObj.callback = callbackName;
+                const queryString = new URLSearchParams(paramsObj).toString();
+                const script = document.createElement('script');
+                script.src = SCRIPT_URL + '?' + queryString;
+                
+                // แจ้งเตือนถ้าไม่สามารถโหลด Script ได้ (ติด CORS หรือ URL ผิด)
+                script.onerror = () => {
+                    reject(new Error('เกิดข้อผิดพลาดในการเชื่อมต่อ: กรุณาตรวจสอบว่าตั้งค่า Web App เป็น "ทุกคน" (Anyone) หรือยัง'));
+                };
+                
+                document.body.appendChild(script);
+            });
+        }
+
+        async function reloadData() {
+            const identifier = document.getElementById('global-identifier').value.trim();
+            if(!identifier) return;
+
+            // เช็คเบื้องต้นว่าผู้ใช้เปลี่ยน SCRIPT_URL หรือยัง
+            if(SCRIPT_URL.includes("xxxxxx-EXAMPLE")) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาด URL',
+                    html: 'คุณยังไม่ได้นำ URL Web App ที่ Deploy เสร็จแล้วมาใส่ในโค้ดบรรทัดที่ <b>364</b><br><code>const SCRIPT_URL = "...";</code>'
+                });
+                return;
+            }
+
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                if(currentView === 'view-calendar') {
+                    const res = await callGAS_JSONP('getData', { employee_id: identifier });
+                    employeeHistory = res.data || [];
+                    selectedDates.clear();
+                    renderCalendar();
+                } 
+                else if (currentView === 'view-history') {
+                    const res = await callGAS_JSONP('getHistory', { employee_id: identifier });
+                    renderHistoryTable(res.data);
+                }
+                else if (currentView === 'view-approval') {
+                    if(!identifier.includes('@')) {
+                        Swal.fire('แจ้งเตือน', 'กรุณาระบุรูปแบบอีเมลเพื่อดูรายการอนุมัติ', 'warning');
+                        document.getElementById('loading-overlay').style.display = 'none';
+                        return;
+                    }
+                    const res = await callGAS_JSONP('getApprovals', { manager_email: identifier });
+                    renderApprovalTable(res.data);
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เชื่อมต่อ Server ไม่สำเร็จ',
+                    html: '<small class="text-danger">' + err.message + '</small>'
+                });
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        // --- 📅 CALENDAR LOGIC ---
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            document.getElementById('month-year-display').innerText = `${thMonths[month]} ${year + 543}`;
+            const calendarBody = document.getElementById('calendar-body');
+            calendarBody.innerHTML = '';
+
+            daysOfWeek.forEach(day => {
+                calendarBody.innerHTML += `<div class="calendar-cell header">${day}</div>`;
+            });
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                calendarBody.innerHTML += `<div class="calendar-cell empty"></div>`;
+            }
+
+            for (let i = 1; i <= lastDate; i++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                const cell = document.createElement('div');
+                cell.className = 'calendar-cell date-cell';
+                cell.dataset.date = dateStr;
+                cell.innerHTML = `<div class="date-number">${i}</div>`;
+
+                const history = employeeHistory.find(h => h.date.substring(0,10) === dateStr);
+                
+                if (history) {
+                    cell.innerHTML += `<div class="status-badge status-${history.status}">${history.status}</div>`;
+                    cell.style.pointerEvents = 'none'; cell.style.opacity = '0.7';
+                } else if (selectedDates.has(dateStr)) {
+                    cell.classList.add('selected');
+                }
+                calendarBody.appendChild(cell);
+            }
+
+            const total = firstDayIndex + lastDate;
+            const remaining = (Math.ceil(total / 7) * 7) - total;
+            for(let i = 0; i < remaining; i++) calendarBody.innerHTML += `<div class="calendar-cell empty"></div>`;
+            updateRequestBtn();
+        }
+
+        function changeMonth(step) { currentDate.setMonth(currentDate.getMonth() + step); renderCalendar(); }
+        function setupDragSelection() {
+            const calendar = document.getElementById('calendar-body');
+            calendar.addEventListener('mousedown', (e) => {
+                const cell = e.target.closest('.date-cell');
+                if (cell && cell.style.pointerEvents !== 'none') { isDragging = true; toggleDate(cell); }
+            });
+            calendar.addEventListener('mouseover', (e) => {
+                if (isDragging) {
+                    const cell = e.target.closest('.date-cell');
+                    if (cell && cell.style.pointerEvents !== 'none') {
+                        if(!selectedDates.has(cell.dataset.date)){
+                            selectedDates.add(cell.dataset.date); cell.classList.add('selected'); updateRequestBtn();
+                        }
+                    }
+                }
+            });
+            document.addEventListener('mouseup', () => isDragging = false);
+        }
+
+        function toggleDate(cell) {
+            const date = cell.dataset.date;
+            if (selectedDates.has(date)) { selectedDates.delete(date); cell.classList.remove('selected'); }
+            else { selectedDates.add(date); cell.classList.add('selected'); }
+            updateRequestBtn();
+        }
+        function updateRequestBtn() {
+            const btn = document.getElementById('btn-request');
+            btn.innerHTML = `<i class="fas fa-paper-plane"></i> ยื่นเรื่อง WFH (${selectedDates.size} วัน)`;
+            btn.disabled = selectedDates.size === 0;
+        }
+
+        function openWFHModal() {
+            const identifier = document.getElementById('global-identifier').value.trim();
+            if(!identifier) return Swal.fire('แจ้งเตือน', 'กรุณาระบุรหัสพนักงาน/อีเมลด่านบนก่อนยื่นเรื่อง', 'warning');
+            document.getElementById('modal-dates-display').innerText = Array.from(selectedDates).sort().join(', ');
+            wfhModal.show();
+        }
+
+        async function submitWFH() {
+            const payload = {
+                employee_id: document.getElementById('global-identifier').value.trim(),
+                name: document.getElementById('form-name').value.trim(),
+                department: document.getElementById('form-dept').value.trim(),
+                email: document.getElementById('form-email').value.trim(),
+                manager_email: document.getElementById('form-manager').value.trim(),
+                reason: document.getElementById('form-reason').value.trim(),
+                dates: Array.from(selectedDates)
+            };
+
+            if(!payload.name || !payload.email || !payload.manager_email || !payload.reason) 
+                return Swal.fire('แจ้งเตือน', 'กรุณากรอกให้ครบถ้วน', 'warning');
+
+            if(SCRIPT_URL.includes("xxxxxx-EXAMPLE")) {
+                return Swal.fire('ข้อผิดพลาด', 'กรุณาใส่ URL Web App ในโค้ดก่อนครับ', 'error');
+            }
+
+            wfhModal.hide();
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const res = await callGAS_JSONP('submit', { payload: JSON.stringify(payload) });
+                if (res.status === 'success') { Swal.fire('สำเร็จ!', res.message, 'success'); reloadData(); }
+                else Swal.fire('ผิดพลาด', res.message, 'error');
+            } catch (err) { Swal.fire('ผิดพลาด', err.message, 'error'); }
+            finally { document.getElementById('loading-overlay').style.display = 'none'; }
+        }
+
+        // --- 📖 HISTORY VIEW (Edit & Delete) ---
+        function renderHistoryTable(data) {
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+            if(!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">ไม่พบประวัติการทำรายการ</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const createDate = new Date(item.created_at).toLocaleDateString('th-TH');
+                const badgeClass = item.status === 'Approved' ? 'bg-success' : (item.status === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark');
+                
+                let actionBtns = `<span class="text-muted small">ล็อคข้อมูล</span>`;
+                if(item.status === 'Pending') {
+                    actionBtns = `
+                        <button class="btn btn-sm btn-outline-warning me-1" onclick="promptEdit('${item.request_id}', '${item.reason}')" title="แก้ไขเหตุผล"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="promptDelete('${item.request_id}')" title="ยกเลิกคำขอ"><i class="fas fa-trash"></i></button>
+                    `;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="small text-muted">${createDate}</td>
+                        <td class="small">${item.dates.join('<br>')}</td>
+                        <td>${item.reason}</td>
+                        <td><span class="badge ${badgeClass}">${item.status}</span></td>
+                        <td>${actionBtns}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function promptDelete(reqId) {
+            Swal.fire({
+                title: 'ยืนยันการยกเลิก?',
+                text: "หากยกเลิกแล้วจะไม่สามารถกู้คืนได้ และวัน WFH จะถูกคืนค่า",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'ใช่, ยกเลิกคำขอ!'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('loading-overlay').style.display = 'flex';
+                    try {
+                        const res = await callGAS_JSONP('deleteRequest', { request_id: reqId });
+                        if(res.status === 'success') { Swal.fire('ลบสำเร็จ', res.message, 'success'); reloadData(); }
+                        else Swal.fire('ผิดพลาด', res.message, 'error');
+                    } catch(e) { Swal.fire('Error', e.message, 'error'); }
+                    finally { document.getElementById('loading-overlay').style.display = 'none'; }
+                }
+            });
+        }
+
+        function promptEdit(reqId, oldReason) {
+            document.getElementById('edit-req-id').value = reqId;
+            document.getElementById('edit-reason').value = oldReason;
+            editModal.show();
+        }
+
+        async function saveEdit() {
+            const reqId = document.getElementById('edit-req-id').value;
+            const newReason = document.getElementById('edit-reason').value.trim();
+            if(!newReason) return Swal.fire('แจ้งเตือน', 'กรุณาระบุเหตุผล', 'warning');
+
+            Swal.fire({
+                title: 'ยืนยันการแก้ไข?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f0ad4e',
+                confirmButtonText: 'บันทึก'
+            }).then(async (result) => {
+                if(result.isConfirmed) {
+                    editModal.hide();
+                    document.getElementById('loading-overlay').style.display = 'flex';
+                    try {
+                        const res = await callGAS_JSONP('editRequest', { payload: JSON.stringify({request_id: reqId, new_reason: newReason}) });
+                        if(res.status === 'success') { Swal.fire('แก้ไขสำเร็จ', res.message, 'success'); reloadData(); }
+                        else Swal.fire('ผิดพลาด', res.message, 'error');
+                    } catch(e) { Swal.fire('Error', e.message, 'error'); }
+                    finally { document.getElementById('loading-overlay').style.display = 'none'; }
+                }
+            });
+        }
+
+        // --- 👔 MANAGER APPROVAL VIEW ---
+        function renderApprovalTable(data) {
+            const tbody = document.getElementById('approval-table-body');
+            tbody.innerHTML = '';
+            if(!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">🎉 ยอดเยี่ยม! ไม่มีคำขอค้างอนุมัติ</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td>
+                        <td>${item.department}</td>
+                        <td class="text-primary small">${item.dates.join('<br>')}</td>
+                        <td>${item.reason}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-success mb-1" onclick="processApprove('${item.request_id}', 'Approved')"><i class="fas fa-check"></i> อนุมัติ</button>
+                            <button class="btn btn-sm btn-danger mb-1" onclick="processApprove('${item.request_id}', 'Rejected')"><i class="fas fa-times"></i> ปฏิเสธ</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function processApprove(reqId, statusAction) {
+            const managerEmail = document.getElementById('global-identifier').value.trim();
+            const actionText = statusAction === 'Approved' ? 'อนุมัติ' : 'ไม่อนุมัติ';
+            const color = statusAction === 'Approved' ? '#198754' : '#dc3545';
+
+            Swal.fire({
+                title: `ยืนยันการ${actionText}?`,
+                text: "ระบบจะส่งอีเมลแจ้งพนักงานทันที",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: color,
+                confirmButtonText: `ยืนยัน (${statusAction})`
+            }).then(async (result) => {
+                if(result.isConfirmed) {
+                    document.getElementById('loading-overlay').style.display = 'flex';
+                    try {
+                        const res = await callGAS_JSONP('processApproval', { request_id: reqId, status: statusAction, manager_email: managerEmail });
+                        if(res.status === 'success') { Swal.fire('สำเร็จ', res.message, 'success'); reloadData(); }
+                        else Swal.fire('ผิดพลาด', res.message, 'error');
+                    } catch(e) { Swal.fire('Error', e.message, 'error'); }
+                    finally { document.getElementById('loading-overlay').style.display = 'none'; }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
