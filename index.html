@@ -4,86 +4,242 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบ Work From Home (WFH)</title>
-    <!-- Bootstrap 5 CSS -->
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        body { font-family: 'Prompt', sans-serif; background-color: #f4f6f9; overflow-x: hidden; }
+        :root {
+            --sweet-pink: #ff758c;
+            --sweet-peach: #ff7eb3;
+            --sweet-bg: #fff5f8;
+            --sweet-card: #ffffff;
+            --sweet-sidebar-bg: linear-gradient(180deg, #ff758c 0%, #ff7eb3 100%);
+            --sweet-shadow: 0 10px 30px rgba(255, 117, 140, 0.15);
+            
+            /* Status Colors (Pastel) */
+            --status-success: #20c997; /* Soft Teal */
+            --status-danger: #ff6b6b;  /* Soft Red */
+            --status-warning: #feca57; /* Soft Yellow */
+            --status-info: #b19cd9;    /* Soft Purple */
+        }
+
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            background-color: var(--sweet-bg); 
+            overflow-x: hidden; 
+            color: #555;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--sweet-bg); }
+        ::-webkit-scrollbar-thumb { background: #ffb6c1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--sweet-pink); }
         
+        /* Overrides */
+        .text-primary { color: var(--sweet-pink) !important; }
+        .bg-primary { background: linear-gradient(to right, var(--sweet-pink), var(--sweet-peach)) !important; border: none;}
+        
+        .btn-primary {
+            background: linear-gradient(to right, var(--sweet-pink), var(--sweet-peach));
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 117, 140, 0.3);
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(to right, var(--sweet-peach), var(--sweet-pink));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 117, 140, 0.4);
+            color: white;
+        }
+        .btn-outline-danger {
+            color: var(--status-danger);
+            border-color: var(--status-danger);
+            border-radius: 30px;
+        }
+        .btn-outline-danger:hover {
+            background-color: var(--status-danger);
+            border-color: var(--status-danger);
+        }
+
+        .form-control {
+            border-radius: 15px;
+            border: 1px solid #ffb6c1;
+            padding: 10px 15px;
+        }
+        .form-control:focus {
+            border-color: var(--sweet-pink);
+            box-shadow: 0 0 0 0.25rem rgba(255, 117, 140, 0.25);
+        }
+        
+        .card {
+            border-radius: 25px;
+            box-shadow: var(--sweet-shadow);
+            border: none;
+            background: var(--sweet-card);
+            margin-bottom: 20px;
+        }
+
+        /* Status Badges */
+        .badge.bg-success { background-color: var(--status-success) !important; }
+        .badge.bg-warning { background-color: var(--status-warning) !important; color: white !important; }
+        .badge.bg-danger { background-color: var(--status-danger) !important; }
+        .badge.bg-info { background-color: var(--status-info) !important; color: white !important; }
+
         /* Login Screen */
-        #login-container { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2c3e50, #3498db); z-index: 1000; position: fixed; width: 100%; top: 0; left: 0; }
-        .login-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center; }
-        .login-logo { font-size: 50px; color: #3498db; margin-bottom: 20px; }
+        #login-container { 
+            height: 100vh; display: flex; align-items: center; justify-content: center; 
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); 
+            z-index: 1000; position: fixed; width: 100%; top: 0; left: 0; 
+        }
+        .login-card { 
+            background: rgba(255, 255, 255, 0.95); padding: 50px 40px; 
+            border-radius: 35px; box-shadow: 0 15px 35px rgba(255, 154, 158, 0.4); 
+            width: 100%; max-width: 420px; text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .login-logo { 
+            width: 80px; height: 80px; background: linear-gradient(to right, var(--sweet-pink), var(--sweet-peach)); 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            font-size: 35px; color: white; margin: 0 auto 20px auto; 
+            box-shadow: 0 8px 20px rgba(255, 117, 140, 0.4);
+        }
 
         /* Layout */
         .wrapper { display: none; min-height: 100vh; flex-direction: row; }
-        .sidebar { width: 250px; background: #2c3e50; color: white; transition: all 0.3s; flex-shrink: 0; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 25px 20px 20px; background: #1a252f; text-align: center; border-bottom: 1px solid #2c3e50; }
-        .brand-logo { width: 65px; height: 65px; background: linear-gradient(135deg, #0d6efd, #00d2ff); color: white; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 12px auto; box-shadow: 0 6px 15px rgba(13, 110, 253, 0.4); }
-        .brand-text { font-size: 1.25rem; letter-spacing: 0.5px; color: #ffffff; margin-bottom: 2px; }
-        .sidebar-menu { padding: 15px 0; flex-grow: 1; }
-        .menu-item { padding: 12px 20px; color: #bdc3c7; text-decoration: none; display: block; transition: 0.2s; cursor: pointer; }
-        .menu-item:hover, .menu-item.active { background: #34495e; color: #fff; border-left: 4px solid #3498db; }
-        .menu-item i { width: 25px; }
-
-        /* Main Content */
-        .main-panel { flex-grow: 1; display: flex; flex-direction: column; width: calc(100% - 250px); }
-        .header-banner { background: #ffffff; padding: 15px 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-        .content-area { padding: 20px; flex-grow: 1; }
-        .app-view { display: none; animation: fadeIn 0.4s; }
-        .app-view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Calendar & Flow UI */
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; background: #ddd; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-        .calendar-cell { background: #fff; min-height: 80px; padding: 8px; cursor: pointer; user-select: none; transition: all 0.2s; position: relative; }
-        .calendar-cell.header { background: #f8f9fa; min-height: auto; text-align: center; font-weight: 600; padding: 10px; cursor: default; }
-        .calendar-cell:not(.header):not(.empty):hover { background: #f1f8ff; }
-        .calendar-cell.empty { background: #f8f9fa; cursor: default; }
-        .date-number { font-weight: 500; color: #333; }
-        .status-badge { font-size: 0.75rem; padding: 3px 6px; border-radius: 4px; display: inline-block; margin-top: 5px; width: 100%; text-align: center; color: #000; }
-        .status-Pending { background-color: #ffc107; }
-        .status-Approved { background-color: #198754; color: white; }
-        .status-Rejected { background-color: #dc3545; color: white; }
-        .status-Returned { background-color: #0dcaf0; color: #000; }
-        .calendar-cell.selected { background-color: #e0f0ff; border: 2px solid #0d6efd; }
-
-        .process-flow { display: flex; justify-content: space-between; align-items: center; max-width: 250px; margin: 0 auto; position: relative; }
-        .process-flow::before { content: ''; position: absolute; top: 13px; left: 20px; right: 20px; height: 3px; background: #e9ecef; z-index: 1; }
-        .flow-step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px; background: #fff; padding: 0 4px; }
-        .flow-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; background: #e9ecef; box-shadow: 0 0 0 4px #fff; }
-        .flow-label { font-size: 0.7rem; font-weight: 500; color: #6c757d; }
         
-        .step-submit .flow-icon { background: #0d6efd; }
-        .step-submit .flow-label { color: #0d6efd; }
-        .step-pending .flow-icon { background: #ffc107; color: #000; }
-        .step-pending .flow-label { color: #ffc107; }
-        .step-approved .flow-icon { background: #198754; }
-        .step-approved .flow-label { color: #198754; }
-        .step-rejected .flow-icon { background: #dc3545; }
-        .step-rejected .flow-label { color: #dc3545; }
-        .step-returned .flow-icon { background: #0dcaf0; color: #000;}
-        .step-returned .flow-label { color: #0dcaf0; }
+        /* Sidebar Styling */
+        .sidebar { 
+            width: 260px; background: var(--sweet-sidebar-bg); color: white; 
+            transition: all 0.3s; flex-shrink: 0; display: flex; flex-direction: column; 
+            box-shadow: 5px 0 25px rgba(255, 117, 140, 0.2); z-index: 10;
+        }
+        .sidebar-header { 
+            padding: 30px 20px 20px; text-align: center; 
+            background: rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.2); 
+        }
+        .brand-logo { 
+            width: 70px; height: 70px; background: white; color: var(--sweet-pink); 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            font-size: 32px; margin: 0 auto 15px auto; box-shadow: 0 6px 15px rgba(0,0,0,0.1); transition: all 0.3s ease; 
+        }
+        .sidebar-header:hover .brand-logo { transform: translateY(-5px) scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        .brand-text { font-size: 1.3rem; letter-spacing: 0.5px; color: #ffffff; margin-bottom: 2px; }
+        
+        .sidebar-menu { padding: 25px 0; flex-grow: 1; }
+        .menu-item { 
+            padding: 14px 20px 14px 25px; color: rgba(255,255,255,0.8); text-decoration: none; 
+            display: block; transition: 0.3s; cursor: pointer; 
+            border-radius: 0 30px 30px 0; margin-right: 15px; margin-bottom: 8px; font-weight: 500;
+        }
+        .menu-item:hover, .menu-item.active { 
+            background: rgba(255,255,255,0.25); color: #fff; 
+            border-left: 5px solid white; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .menu-item i { width: 30px; font-size: 1.1rem;}
 
-        .footer { background: #343a40; color: #fff; text-align: center; padding: 15px 0; width: 100%; }
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; }
+        /* Main Content Styling */
+        .main-panel { flex-grow: 1; display: flex; flex-direction: column; width: calc(100% - 260px); }
+        .header-banner { 
+            background: #ffffff; padding: 15px 30px; box-shadow: 0 4px 20px rgba(255, 117, 140, 0.05); 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 2px solid var(--sweet-bg);
+        }
+        .content-area { padding: 25px 30px; flex-grow: 1; }
+        .app-view { display: none; animation: fadeIn 0.5s; }
+        .app-view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Calendar UI */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .calendar-grid { 
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; 
+            background: #ffe4e1; padding: 10px; border-radius: 20px; overflow: hidden; 
+        }
+        .calendar-cell { 
+            background: #fff; min-height: 90px; padding: 10px; cursor: pointer; 
+            user-select: none; transition: all 0.2s; position: relative; border-radius: 12px;
+        }
+        .calendar-cell.header { background: transparent; min-height: auto; text-align: center; font-weight: 600; padding: 10px; cursor: default; color: var(--sweet-pink); }
+        .calendar-cell:not(.header):not(.empty):hover { background: #fff0f5; transform: scale(1.02); z-index: 1; box-shadow: 0 4px 10px rgba(255, 117, 140, 0.1); }
+        .calendar-cell.empty { background: transparent; cursor: default; }
+        .date-number { font-weight: 600; color: #555; font-size: 1.1rem; }
+        
+        .status-badge { 
+            font-size: 0.75rem; padding: 4px 6px; border-radius: 6px; 
+            display: inline-block; margin-top: 8px; width: 100%; text-align: center; font-weight: 500;
+        }
+        .status-Pending { background-color: var(--status-warning); color: white; }
+        .status-Approved { background-color: var(--status-success); color: white; }
+        .status-Rejected { background-color: var(--status-danger); color: white; }
+        .status-Returned { background-color: var(--status-info); color: white; }
+        
+        .calendar-cell.selected { 
+            background-color: #fff0f5; 
+            box-shadow: inset 0 0 0 2px var(--sweet-pink); 
+            animation: pulseSelect 1s infinite alternate;
+        }
+        @keyframes pulseSelect {
+            0% { box-shadow: inset 0 0 0 2px var(--sweet-pink), 0 0 0 0 rgba(255, 117, 140, 0.4); }
+            100% { box-shadow: inset 0 0 0 2px var(--sweet-pink), 0 0 0 8px rgba(255, 117, 140, 0); }
+        }
+
+        /* Process Flow UI */
+        .process-flow { display: flex; justify-content: space-between; align-items: center; max-width: 280px; margin: 0 auto; position: relative; }
+        .process-flow::before { content: ''; position: absolute; top: 15px; left: 20px; right: 20px; height: 4px; background: #ffe4e1; z-index: 1; border-radius: 2px;}
+        .flow-step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; background: transparent; padding: 0 4px; }
+        .flow-icon { 
+            width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            font-size: 13px; color: white; background: #ffe4e1; box-shadow: 0 0 0 5px #fff; transition: all 0.3s; 
+        }
+        .flow-label { font-size: 0.75rem; font-weight: 500; color: #a0a0a0; }
+        
+        .step-submit .flow-icon { background: var(--sweet-pink); }
+        .step-submit .flow-label { color: var(--sweet-pink); }
+        .step-pending .flow-icon { background: var(--status-warning); }
+        .step-pending .flow-label { color: var(--status-warning); }
+        .step-approved .flow-icon { background: var(--status-success); }
+        .step-approved .flow-label { color: var(--status-success); }
+        .step-rejected .flow-icon { background: var(--status-danger); }
+        .step-rejected .flow-label { color: var(--status-danger); }
+        .step-returned .flow-icon { background: var(--status-info); }
+        .step-returned .flow-label { color: var(--status-info); }
+
+        /* Footer & Modals */
+        .footer { background: #ffffff; color: #ffb6c1; text-align: center; padding: 20px 0; width: 100%; border-top: 1px solid var(--sweet-bg); font-weight: 300;}
+        .modal-content { border-radius: 25px; border: none; overflow: hidden; box-shadow: 0 15px 40px rgba(255, 117, 140, 0.2); }
+        .modal-header { padding: 20px 25px; }
+        .modal-body { padding: 25px; }
+        .modal-footer { border-top: none; padding: 15px 25px 25px; background: #fafafa;}
+        
+        /* Table overrides */
+        .table { color: #555; }
+        .table-light { background-color: #fff0f5; color: var(--sweet-pink); }
+        .table-hover tbody tr:hover { background-color: #fff5f8; }
+
+        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.85); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px); }
 
         @media (max-width: 768px) {
             .wrapper { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; }
-            .sidebar-header { width: 100%; }
+            .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; box-shadow: 0 5px 15px rgba(255, 117, 140, 0.15);}
+            .sidebar-header { width: 100%; padding: 20px; }
             .sidebar-menu { display: flex; overflow-x: auto; white-space: nowrap; width: 100%; padding: 0; }
-            .menu-item { border-left: none; border-bottom: 4px solid transparent; }
-            .menu-item.active { border-left: none; border-bottom: 4px solid #3498db; }
+            .menu-item { border-radius: 0; margin-right: 0; border-left: none; border-bottom: 4px solid transparent; padding: 15px; }
+            .menu-item.active { border-left: none; border-bottom: 4px solid white; }
             .main-panel { width: 100%; }
-            .calendar-cell { min-height: 60px; padding: 4px; }
-            .date-number { font-size: 0.9rem; }
-            .process-flow { max-width: 180px; }
-            .flow-icon { width: 22px; height: 22px; font-size: 9px; }
+            .header-banner { flex-direction: column; text-align: center; gap: 15px; padding: 20px; }
+            .content-area { padding: 15px; }
+            .calendar-cell { min-height: 60px; padding: 6px; border-radius: 8px;}
+            .date-number { font-size: 1rem; }
+            .process-flow { max-width: 200px; }
+            .flow-icon { width: 26px; height: 26px; font-size: 11px; }
+            .process-flow::before { top: 11px; }
         }
     </style>
 </head>
@@ -91,25 +247,25 @@
 
     <!-- Loading Overlay -->
     <div id="loading-overlay">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-        <h4 class="mt-3">กำลังประมวลผล...</h4>
+        <div class="spinner-border text-primary" role="status" style="width: 3.5rem; height: 3.5rem;"></div>
+        <h4 class="mt-3 text-primary fw-bold">กำลังประมวลผล...</h4>
     </div>
 
     <!-- Login Screen -->
     <div id="login-container">
         <div class="login-card">
-            <div class="login-logo"><i class="fas fa-laptop-house"></i></div>
-            <h4 class="fw-bold mb-4">เข้าสู่ระบบ WFH</h4>
+            <div class="login-logo"><i class="fas fa-heart"></i></div>
+            <h3 class="fw-bold mb-4 text-primary">ระบบ WFH 🌸</h3>
             <form onsubmit="event.preventDefault(); doLogin();">
                 <div class="mb-3 text-start">
-                    <label class="form-label">ชื่อผู้ใช้ (Username / Email)</label>
-                    <input type="text" id="login-user" class="form-control" required>
+                    <label class="form-label text-muted fw-bold px-1">ชื่อผู้ใช้ (Username / Email)</label>
+                    <input type="text" id="login-user" class="form-control form-control-lg" placeholder="กรอกชื่อผู้ใช้งาน..." required>
                 </div>
                 <div class="mb-4 text-start">
-                    <label class="form-label">รหัสผ่าน (รหัสพนักงาน)</label>
-                    <input type="password" id="login-pass" class="form-control" required>
+                    <label class="form-label text-muted fw-bold px-1">รหัสผ่าน</label>
+                    <input type="password" id="login-pass" class="form-control form-control-lg" placeholder="กรอกรหัสผ่าน..." required>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="fas fa-sign-in-alt"></i> ล็อกอิน</button>
+                <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold py-2 shadow-sm"><i class="fas fa-sign-in-alt me-2"></i> เข้าสู่ระบบ</button>
             </form>
         </div>
     </div>
@@ -119,19 +275,19 @@
         <!-- Sidebar -->
         <nav class="sidebar">
             <div class="sidebar-header">
-                <div class="brand-logo"><i class="fas fa-laptop-house"></i></div>
-                <h5 class="fw-bold brand-text">WFH System</h5>
-                <small class="text-info" id="sidebar-role-display">Role</small>
+                <div class="brand-logo"><i class="fas fa-home"></i></div>
+                <h5 class="fw-bold brand-text">My WFH Space</h5>
+                <small class="badge bg-light text-primary rounded-pill mt-2 px-3 py-2 shadow-sm" id="sidebar-role-display">Role</small>
             </div>
             <div class="sidebar-menu">
                 <a class="menu-item active" onclick="switchView('view-calendar', this)">
-                    <i class="fas fa-calendar-alt"></i> ปฏิทินคำขอ
+                    <i class="fas fa-calendar-heart"></i> ปฏิทินคำขอ
                 </a>
                 <a class="menu-item" onclick="switchView('view-history', this)">
-                    <i class="fas fa-history"></i> ประวัติคำขอ WFH
+                    <i class="fas fa-clipboard-list"></i> ประวัติการลางาน
                 </a>
-                <a class="menu-item text-warning" id="menu-approval" onclick="switchView('view-approval', this)" style="display: none;">
-                    <i class="fas fa-user-tie"></i> <span id="menu-approval-text">พิจารณาคำขอ</span>
+                <a class="menu-item" id="menu-approval" onclick="switchView('view-approval', this)" style="display: none;">
+                    <i class="fas fa-crown"></i> <span id="menu-approval-text">พิจารณาคำขอ</span>
                 </a>
             </div>
         </nav>
@@ -139,13 +295,14 @@
         <!-- Main Content -->
         <div class="main-panel">
             <div class="header-banner">
-                <h4 class="mb-0 text-primary fw-bold" id="page-title">ปฏิทินยื่นเรื่อง</h4>
+                <h4 class="mb-0 text-primary fw-bold" id="page-title"><i class="fas fa-calendar-alt me-2"></i>ปฏิทินยื่นเรื่อง</h4>
                 <div class="d-flex align-items-center">
-                    <div class="text-end me-3 d-none d-md-block">
+                    <div class="text-end me-4 d-none d-md-block">
                         <div class="fw-bold text-dark" id="user-display-name">Name</div>
                         <div class="small text-muted" id="user-display-dept">Dept</div>
                     </div>
-                    <button class="btn btn-outline-danger btn-sm" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
+                    <!-- ปุ่ม Logout -->
+                    <button class="btn btn-outline-danger btn-sm px-3 py-2 fw-bold" onclick="doLogout()"><i class="fas fa-sign-out-alt me-1"></i> ออกจากระบบ</button>
                 </div>
             </div>
 
@@ -153,23 +310,23 @@
                 
                 <!-- VIEW 1: CALENDAR -->
                 <div id="view-calendar" class="app-view active">
-                    <div class="card shadow-sm border-0 mb-3">
-                        <div class="card-body">
-                            <div class="d-flex flex-wrap justify-content-end mb-2 gap-2">
-                                <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> รออนุมัติ</span>
-                                <span class="badge bg-info text-dark"><i class="fas fa-undo"></i> ส่งกลับแก้ไข</span>
-                                <span class="badge bg-success"><i class="fas fa-check-circle"></i> อนุมัติ</span>
+                    <div class="card">
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-wrap justify-content-end mb-3 gap-2">
+                                <span class="badge bg-warning"><i class="fas fa-clock"></i> รออนุมัติ</span>
+                                <span class="badge bg-info"><i class="fas fa-magic"></i> ส่งกลับแก้ไข</span>
+                                <span class="badge bg-success"><i class="fas fa-check-circle"></i> อนุมัติแล้ว</span>
                                 <span class="badge bg-danger"><i class="fas fa-times-circle"></i> ไม่อนุมัติ</span>
                             </div>
-                            <div class="calendar-header">
-                                <button class="btn btn-outline-secondary btn-sm" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
-                                <h5 id="month-year-display" class="mb-0 fw-bold text-primary"></h5>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
+                            <div class="calendar-header px-2">
+                                <button class="btn btn-light rounded-circle shadow-sm" onclick="changeMonth(-1)"><i class="fas fa-chevron-left text-primary"></i></button>
+                                <h4 id="month-year-display" class="mb-0 fw-bold text-primary"></h4>
+                                <button class="btn btn-light rounded-circle shadow-sm" onclick="changeMonth(1)"><i class="fas fa-chevron-right text-primary"></i></button>
                             </div>
                             <div class="calendar-grid" id="calendar-body"></div>
-                            <div class="text-center mt-4">
-                                <button class="btn btn-primary rounded-pill px-4 shadow" onclick="openWFHModal()" id="btn-request" disabled>
-                                    <i class="fas fa-paper-plane"></i> ยื่นเรื่อง WFH (0 วัน)
+                            <div class="text-center mt-4 pt-2">
+                                <button class="btn btn-primary btn-lg rounded-pill px-5 shadow" onclick="openWFHModal()" id="btn-request" disabled>
+                                    <i class="fas fa-paper-plane me-2"></i> ยื่นเรื่อง WFH (0 วัน)
                                 </button>
                             </div>
                         </div>
@@ -178,20 +335,20 @@
 
                 <!-- VIEW 2: HISTORY (Process Flow) -->
                 <div id="view-history" class="app-view">
-                    <div class="card shadow-sm border-0">
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold text-secondary mb-3"><i class="fas fa-list"></i> ประวัติคำขอ WFH</h5>
+                    <div class="card">
+                        <div class="card-body p-4">
+                            <h5 class="card-title fw-bold text-primary mb-4"><i class="fas fa-book-open me-2"></i> ประวัติคำขอ WFH ของฉัน</h5>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>วันที่ WFH</th>
-                                            <th>รายละเอียด</th>
-                                            <th class="text-center" style="width: 200px;">สถานะ</th>
-                                            <th class="text-center">จัดการ</th>
+                                            <th class="py-3 px-3 rounded-start">วันที่ขอ WFH</th>
+                                            <th class="py-3">เหตุผลรายละเอียด</th>
+                                            <th class="text-center py-3" style="width: 250px;">ความคืบหน้า (Status)</th>
+                                            <th class="text-center py-3 rounded-end">จัดการ</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="history-table-body"></tbody>
+                                    <tbody id="history-table-body" class="border-top-0"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -200,39 +357,40 @@
 
                 <!-- VIEW 3: MANAGER/ADMIN APPROVAL -->
                 <div id="view-approval" class="app-view">
-                    <h5 class="fw-bold text-warning mt-2"><i class="fas fa-tasks"></i> รายการรอพิจารณา (Pending)</h5>
-                    <div class="card shadow-sm border-0 mb-4">
-                        <div class="card-body p-0">
+                    
+                    <div class="card mb-4 border-start border-warning border-4">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold text-warning mb-3"><i class="fas fa-envelope-open-text me-2"></i> รายการรอพิจารณา (Pending / Returned)</h5>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>พนักงาน</th>
-                                            <th>วันที่ WFH</th>
-                                            <th>เหตุผล</th>
-                                            <th class="text-center" style="min-width:250px;">การพิจารณา</th>
+                                            <th class="py-3 px-3 rounded-start">ชื่อพนักงาน</th>
+                                            <th class="py-3">วันที่ขอ WFH</th>
+                                            <th class="py-3">เหตุผล</th>
+                                            <th class="text-center py-3 rounded-end" style="min-width:280px;">การตัดสินใจ</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="approval-pending-body"></tbody>
+                                    <tbody id="approval-pending-body" class="border-top-0"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
 
-                    <h5 class="fw-bold text-secondary mt-4"><i class="fas fa-history"></i> ประวัติคำขอของลูกน้องทั้งหมด</h5>
-                    <div class="card shadow-sm border-0">
-                        <div class="card-body p-0">
+                    <div class="card border-start border-secondary border-4">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold text-secondary mb-3"><i class="fas fa-history me-2"></i> ประวัติคำขอของลูกน้องทั้งหมด</h5>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>พนักงาน</th>
-                                            <th>วันที่ WFH</th>
-                                            <th>สถานะ</th>
-                                            <th class="text-center">จัดการ</th>
+                                            <th class="py-3 px-3 rounded-start">ชื่อพนักงาน</th>
+                                            <th class="py-3">วันที่ขอ WFH</th>
+                                            <th class="py-3 text-center">สถานะ</th>
+                                            <th class="text-center py-3 rounded-end">จัดการ (แอดมิน)</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="approval-history-body"></tbody>
+                                    <tbody id="approval-history-body" class="border-top-0"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -242,28 +400,32 @@
             </div>
 
             <!-- Footer -->
-            <div class="footer">Copyright © 2026 ระบบ Work From Home | By มือใหม่หัดเดฟ</div>
+            <div class="footer">
+                <i class="fas fa-heart text-primary me-1"></i> Copyright © 2026 ระบบ Work From Home | By มือใหม่หัดเดฟ
+            </div>
         </div>
     </div>
 
     <!-- Modal ยื่นคำขอ -->
     <div class="modal fade" id="wfhModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content border-0 shadow">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-edit"></i> ระบุเหตุผลการขอ WFH</h5>
+                    <h5 class="modal-title fw-bold"><i class="fas fa-pen-fancy me-2"></i> ระบุรายละเอียดการลา WFH</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info py-2"><strong>วันที่เลือก:</strong> <span id="modal-dates-display"></span></div>
-                    <div class="mb-3">
-                        <label class="form-label">เหตุผลการขอทำงานที่บ้าน</label>
-                        <textarea class="form-control" id="form-reason" rows="3" required></textarea>
+                    <div class="alert alert-light border border-info py-2 mb-4 shadow-sm text-center">
+                        <i class="fas fa-calendar-check text-info me-2"></i> <strong>วันที่เลือก:</strong> <br><span id="modal-dates-display" class="text-primary fw-bold"></span>
+                    </div>
+                    <div class="mb-3 px-2">
+                        <label class="form-label fw-bold text-muted">เหตุผลการขอทำงานที่บ้าน</label>
+                        <textarea class="form-control" id="form-reason" rows="4" placeholder="พิมพ์เหตุผลที่น่ารักๆ ของคุณที่นี่..." required></textarea>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="button" class="btn btn-success" onclick="submitWFH()"><i class="fas fa-save"></i> ยืนยัน</button>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-5 shadow" onclick="submitWFH()"><i class="fas fa-paper-plane me-2"></i> ยืนยันการส่ง</button>
                 </div>
             </div>
         </div>
@@ -271,23 +433,23 @@
 
     <!-- Modal แก้ไขเหตุผล (User) -->
     <div class="modal fade" id="editModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content border-0 shadow">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
                 <div class="modal-header bg-info">
-                    <h5 class="modal-title text-dark"><i class="fas fa-pencil-alt"></i> แก้ไขคำขอ WFH</h5>
+                    <h5 class="modal-title fw-bold text-dark"><i class="fas fa-magic me-2"></i> แก้ไขคำขอ WFH</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="edit-req-id">
-                    <div class="alert alert-warning" id="edit-manager-comment" style="display:none;"></div>
-                    <div class="mb-3">
-                        <label class="form-label">เหตุผลใหม่</label>
-                        <textarea class="form-control" id="edit-reason" rows="3" required></textarea>
+                    <div class="alert alert-warning border-0 shadow-sm" id="edit-manager-comment" style="display:none; border-radius: 15px;"></div>
+                    <div class="mb-3 px-2 mt-3">
+                        <label class="form-label fw-bold text-muted">เหตุผลใหม่</label>
+                        <textarea class="form-control" id="edit-reason" rows="4" required></textarea>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="button" class="btn btn-info text-dark fw-bold" onclick="saveEdit()"><i class="fas fa-paper-plane"></i> บันทึกและส่งใหม่</button>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-info rounded-pill px-5 shadow text-dark fw-bold" onclick="saveEdit()"><i class="fas fa-paper-plane me-2"></i> บันทึกและส่งใหม่</button>
                 </div>
             </div>
         </div>
@@ -301,7 +463,7 @@
         // ==========================================
         // ⚠️ สำคัญมาก: เปลี่ยน SCRIPT_URL ตรงนี้ ⚠️
         // ==========================================
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxERK_Io2Dum6ErJcP6JC4Dv4cM1nhAS7X_2L57y_o9p21QMSEzV-NJvBKDh0rh5uiM/exec"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-xxxxxx-EXAMPLE/exec"; 
         
         let currentUser = null;
         let currentDate = new Date();
@@ -317,7 +479,6 @@
         let editModal;
 
         document.addEventListener('DOMContentLoaded', () => {
-            // โหลด Modals หลังจาก DOM โหลดเสร็จ เพื่อป้องกัน Error bootstrap is not defined
             wfhModal = new bootstrap.Modal(document.getElementById('wfhModal'));
             editModal = new bootstrap.Modal(document.getElementById('editModal'));
 
@@ -327,7 +488,12 @@
             const urlParams = new URLSearchParams(window.location.search);
             const viewParam = urlParams.get('view');
             if(viewParam === 'approval') {
-                Swal.fire('ยินดีต้อนรับ', 'กรุณาเข้าสู่ระบบเพื่อเข้าสู่หน้าสำหรับผู้อนุมัติ', 'info');
+                Swal.fire({
+                    title: '🌸 ยินดีต้อนรับ', 
+                    text: 'กรุณาเข้าสู่ระบบเพื่อพิจารณาคำขอค่ะ', 
+                    icon: 'info',
+                    confirmButtonColor: '#ff758c'
+                });
             }
         });
 
@@ -345,14 +511,14 @@
                 const queryString = new URLSearchParams(paramsObj).toString();
                 const script = document.createElement('script');
                 script.src = SCRIPT_URL + '?' + queryString;
-                script.onerror = () => { reject(new Error('เกิดข้อผิดพลาดในการเชื่อมต่อ Web App')); };
+                script.onerror = () => { reject(new Error('เกิดข้อผิดพลาดในการเชื่อมต่อ Web App ค่ะ')); };
                 document.body.appendChild(script);
             });
         }
 
         /* --- Auth Logic --- */
         async function doLogin() {
-            if(SCRIPT_URL.includes("xxxxxx-EXAMPLE")) return Swal.fire('Error', 'กรุณาตั้งค่า SCRIPT_URL ในโค้ดก่อนครับ', 'error');
+            if(SCRIPT_URL.includes("xxxxxx-EXAMPLE")) return Swal.fire({title: 'อุ๊ปส์!', text: 'อย่าลืมตั้งค่า SCRIPT_URL ในโค้ดก่อนนะคะ 🥺', icon: 'error', confirmButtonColor: '#ff758c'});
 
             const user = document.getElementById('login-user').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
@@ -364,33 +530,54 @@
                     currentUser = res.data;
                     initApp();
                 } else {
-                    Swal.fire('เข้าสู่ระบบล้มเหลว', res.message, 'error');
+                    Swal.fire({title: 'เข้าสู่ระบบไม่สำเร็จ', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
                 }
             } catch(e) {
-                Swal.fire('Error', e.message, 'error');
+                Swal.fire({title: 'Error', text: e.message, icon: 'error', confirmButtonColor: '#ff758c'});
             } finally {
                 document.getElementById('loading-overlay').style.display = 'none';
             }
         }
 
+        // ฟังก์ชัน Logout แบบมี Pop-up ยืนยันสไตล์หวานๆ
         function doLogout() {
-            currentUser = null;
-            document.getElementById('app-container').style.display = 'none';
-            document.getElementById('login-container').style.display = 'flex';
-            document.getElementById('login-user').value = '';
-            document.getElementById('login-pass').value = '';
+            Swal.fire({
+                title: 'จะไปแล้วหรอคะ? 🥺',
+                text: "ยืนยันการออกจากระบบ",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ff758c',
+                cancelButtonColor: '#e9ecef',
+                confirmButtonText: 'ใช่, ออกจากระบบ',
+                cancelButtonText: '<span style="color:#555">ยกเลิก</span>'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    currentUser = null;
+                    document.getElementById('app-container').style.display = 'none';
+                    document.getElementById('login-container').style.display = 'flex';
+                    document.getElementById('login-user').value = '';
+                    document.getElementById('login-pass').value = '';
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'ออกจากระบบเรียบร้อยแล้วค่ะ 👋',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                }
+            });
         }
 
         function initApp() {
             document.getElementById('login-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
             
-            // Set UI with user data
-            document.getElementById('user-display-name').innerText = currentUser.name;
+            document.getElementById('user-display-name').innerText = `คุณ ${currentUser.name}`;
             document.getElementById('user-display-dept').innerText = `${currentUser.department} (${currentUser.role})`;
-            document.getElementById('sidebar-role-display').innerText = `Role: ${currentUser.role}`;
+            document.getElementById('sidebar-role-display').innerText = currentUser.role;
 
-            // Handle RBAC (Role-Based Access Control)
             if(currentUser.role === 'User') {
                 document.getElementById('menu-approval').style.display = 'none';
             } else {
@@ -401,13 +588,12 @@
             renderCalendar();
             setupDragSelection();
             
-            // ตรวจสอบพารามิเตอร์ของ URL หากมาจากอีเมลอนุมัติ
             const urlParams = new URLSearchParams(window.location.search);
             const viewParam = urlParams.get('view');
             if(viewParam === 'approval' && currentUser.role !== 'User') {
                 document.getElementById('menu-approval').click();
             } else {
-                document.querySelector('.menu-item').click(); // trigger load view-calendar
+                document.querySelector('.menu-item').click();
             }
         }
 
@@ -418,8 +604,12 @@
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
             if(el) el.classList.add('active');
             currentView = viewId;
-            const titles = { 'view-calendar':'ปฏิทินยื่นเรื่อง', 'view-history':'ประวัติคำขอ', 'view-approval':'สำหรับผู้บังคับบัญชา' };
-            document.getElementById('page-title').innerText = titles[viewId];
+            const titles = { 
+                'view-calendar':'<i class="fas fa-calendar-alt me-2"></i>ปฏิทินยื่นเรื่อง', 
+                'view-history':'<i class="fas fa-clipboard-list me-2"></i>ประวัติคำขอ', 
+                'view-approval':'<i class="fas fa-crown me-2"></i>สำหรับผู้พิจารณา' 
+            };
+            document.getElementById('page-title').innerHTML = titles[viewId];
             reloadData();
         }
 
@@ -440,7 +630,7 @@
                     const res = await callGAS_JSONP('getApprovals', payload);
                     renderApprovalTable(res.data);
                 }
-            } catch (err) { Swal.fire('เชื่อมต่อ Server ไม่สำเร็จ', err.message, 'error'); } 
+            } catch (err) { Swal.fire({title: 'เชื่อมต่อ Server ไม่สำเร็จ', text: err.message, icon: 'error', confirmButtonColor: '#ff758c'}); } 
             finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
@@ -466,7 +656,13 @@
 
                 const history = employeeHistory.find(h => h.date.substring(0,10) === dateStr);
                 if (history) {
-                    cell.innerHTML += `<div class="status-badge status-${history.status}">${history.status}</div>`;
+                    let statusLabel = history.status;
+                    if(history.status === "Approved") statusLabel = "อนุมัติ";
+                    if(history.status === "Rejected") statusLabel = "ไม่อนุมัติ";
+                    if(history.status === "Pending") statusLabel = "รอพิจารณา";
+                    if(history.status === "Returned") statusLabel = "ให้แก้ไข";
+
+                    cell.innerHTML += `<div class="status-badge status-${history.status}">${statusLabel}</div>`;
                     if(history.status !== 'Returned') {
                         cell.style.pointerEvents = 'none'; cell.style.opacity = '0.7';
                     }
@@ -509,7 +705,7 @@
         }
         function updateRequestBtn() {
             const btn = document.getElementById('btn-request');
-            btn.innerHTML = `<i class="fas fa-paper-plane"></i> ยื่นเรื่อง WFH (${selectedDates.size} วัน)`;
+            btn.innerHTML = `<i class="fas fa-paper-plane me-2"></i> ยื่นเรื่อง WFH (${selectedDates.size} วัน)`;
             btn.disabled = selectedDates.size === 0;
         }
 
@@ -520,7 +716,7 @@
 
         async function submitWFH() {
             const reason = document.getElementById('form-reason').value.trim();
-            if(!reason) return Swal.fire('แจ้งเตือน', 'กรุณาระบุเหตุผล', 'warning');
+            if(!reason) return Swal.fire({title: 'เตือนนิดนึงจ้า', text: 'อย่าลืมกรอกเหตุผลนะ', icon: 'warning', confirmButtonColor: '#ff758c'});
 
             const payload = {
                 employee_id: currentUser.employee_id,
@@ -535,9 +731,13 @@
             wfhModal.hide(); document.getElementById('loading-overlay').style.display = 'flex';
             try {
                 const res = await callGAS_JSONP('submit', { payload: JSON.stringify(payload) });
-                if (res.status === 'success') { Swal.fire('สำเร็จ!', res.message, 'success'); reloadData(); }
-                else Swal.fire('ผิดพลาด', res.message, 'error');
-            } catch (err) { Swal.fire('ผิดพลาด', err.message, 'error'); }
+                if (res.status === 'success') { 
+                    Swal.fire({title: 'สำเร็จ! 🎉', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); 
+                    document.getElementById('form-reason').value = '';
+                    reloadData(); 
+                }
+                else Swal.fire({title: 'มีปัญหาเล็กน้อย', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
+            } catch (err) { Swal.fire({title: 'ผิดพลาด', text: err.message, icon: 'error', confirmButtonColor: '#ff758c'}); }
             finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
@@ -551,8 +751,8 @@
 
             return `
             <div class="process-flow">
-                <div class="flow-step step-submit"><div class="flow-icon"><i class="fas fa-paper-plane"></i></div><div class="flow-label">ส่งคำขอ</div></div>
-                <div class="flow-step ${status === 'Pending' ? 'step-pending' : 'step-submit'}"><div class="flow-icon"><i class="fas fa-user-tie"></i></div><div class="flow-label">รอหัวหน้า</div></div>
+                <div class="flow-step step-submit"><div class="flow-icon"><i class="fas fa-paper-plane"></i></div><div class="flow-label">ส่งแล้ว</div></div>
+                <div class="flow-step ${status === 'Pending' ? 'step-pending' : 'step-submit'}"><div class="flow-icon"><i class="fas fa-heart"></i></div><div class="flow-label">รอหัวหน้า</div></div>
                 <div class="flow-step ${step3Class}"><div class="flow-icon">${step3Icon}</div><div class="flow-label">${step3Label}</div></div>
             </div>`;
         }
@@ -560,32 +760,30 @@
         function renderHistoryTable(data) {
             const tbody = document.getElementById('history-table-body');
             tbody.innerHTML = '';
-            if(!data || data.length === 0) return tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">ไม่พบประวัติการทำรายการ</td></tr>`;
+            if(!data || data.length === 0) return tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">ยังไม่มีประวัติการทำรายการค่ะ 😊</td></tr>`;
 
             data.forEach(item => {
-                let actionBtns = `<span class="text-muted small"><i class="fas fa-lock"></i> ล็อคแล้ว</span>`;
+                let actionBtns = `<span class="text-muted small"><i class="fas fa-lock"></i> ล็อคข้อมูล</span>`;
                 if(item.status === 'Pending' || item.status === 'Returned') {
                     let btnText = item.status === 'Returned' ? 'แก้ไขส่งใหม่' : 'แก้ไขเหตุผล';
-                    let btnColor = item.status === 'Returned' ? 'btn-info text-dark' : 'btn-outline-warning';
-                    // หนีบ comment ไปด้วยเพื่อแสดงใน modal
+                    let btnColor = item.status === 'Returned' ? 'btn-info text-dark' : 'btn-outline-warning text-dark';
                     let escapedComment = item.manager_comment ? item.manager_comment.replace(/'/g, "\\'") : '';
-                    actionBtns = `<button class="btn btn-sm ${btnColor} w-100 fw-bold" onclick="promptEdit('${item.request_id}', '${item.reason}', '${escapedComment}')"><i class="fas fa-edit"></i> ${btnText}</button>`;
+                    actionBtns = `<button class="btn btn-sm ${btnColor} w-100 fw-bold rounded-pill shadow-sm" onclick="promptEdit('${item.request_id}', '${item.reason}', '${escapedComment}')"><i class="fas fa-magic"></i> ${btnText}</button>`;
                 }
                 
                 let commentHtml = '';
                 if(item.status === 'Returned' && item.manager_comment) {
-                    commentHtml = `<div class="alert alert-warning p-2 mt-2 mb-0 small"><i class="fas fa-comment-dots"></i> <b>หัวหน้า:</b> ${item.manager_comment}</div>`;
+                    commentHtml = `<div class="alert alert-light border border-info p-2 mt-2 mb-0 small" style="border-radius:10px;"><i class="fas fa-comment-dots text-info"></i> <b>หัวหน้าคอมเมนต์:</b> <span class="text-secondary">${item.manager_comment}</span></div>`;
                 }
 
-                // ถ้าเป็น Admin จะโชว์ชื่อพนักงานในคอลัมน์แรกด้วย
-                let prefixName = currentUser.role === 'Admin' ? `<b>${item.employee_name}</b><br>` : '';
+                let prefixName = currentUser.role === 'Admin' ? `<b class="text-primary">${item.employee_name}</b><br>` : '';
 
                 tbody.innerHTML += `
                     <tr>
-                        <td class="small">${item.dates.join('<br>')}</td>
+                        <td class="small px-3">${item.dates.join('<br>')}</td>
                         <td>${prefixName}<span class="text-secondary">${item.reason}</span>${commentHtml}</td>
                         <td class="text-center">${createProcessFlowHTML(item.status)}</td>
-                        <td class="text-center">${actionBtns}</td>
+                        <td class="text-center px-3">${actionBtns}</td>
                     </tr>
                 `;
             });
@@ -597,7 +795,7 @@
             
             const commentDiv = document.getElementById('edit-manager-comment');
             if(managerComment) {
-                commentDiv.innerHTML = `<strong>เหตุผลที่ส่งกลับ:</strong> ${managerComment}`;
+                commentDiv.innerHTML = `<i class="fas fa-comment-dots"></i> <strong>หัวหน้าให้แก้ไข:</strong> ${managerComment}`;
                 commentDiv.style.display = 'block';
             } else {
                 commentDiv.style.display = 'none';
@@ -608,13 +806,13 @@
         async function saveEdit() {
             const reqId = document.getElementById('edit-req-id').value;
             const newReason = document.getElementById('edit-reason').value.trim();
-            if(!newReason) return Swal.fire('แจ้งเตือน', 'กรุณาระบุเหตุผล', 'warning');
+            if(!newReason) return Swal.fire({title:'เตือนนิดนึง', text:'อย่าลืมระบุเหตุผลใหม่นะคะ', icon:'warning', confirmButtonColor: '#ff758c'});
 
             editModal.hide(); document.getElementById('loading-overlay').style.display = 'flex';
             try {
                 const res = await callGAS_JSONP('editRequest', { payload: JSON.stringify({request_id: reqId, new_reason: newReason}) });
-                if(res.status === 'success') { Swal.fire('ส่งใหม่สำเร็จ', res.message, 'success'); reloadData(); }
-                else Swal.fire('ผิดพลาด', res.message, 'error');
+                if(res.status === 'success') { Swal.fire({title: 'ส่งใหม่สำเร็จ! ✨', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
+                else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
             } catch(e) { Swal.fire('Error', e.message, 'error'); }
             finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
@@ -628,72 +826,76 @@
             let pendingCount = 0; let historyCount = 0;
 
             data.forEach(item => {
-                // รอพิจารณา = Pending หรือ Returned (รอลูกน้องแก้)
                 if(item.status === 'Pending' || item.status === 'Returned') {
                     pendingCount++;
                     let actionButtons = '';
                     if(item.status === 'Returned') {
-                        actionButtons = `<span class="badge bg-info text-dark w-100 p-2"><i class="fas fa-undo"></i> รอพนักงานแก้ไข</span>`;
+                        actionButtons = `<span class="badge bg-light text-info border border-info w-100 p-2 rounded-pill"><i class="fas fa-hourglass-half"></i> รอพนักงานแก้ไข</span>`;
                     } else {
                         actionButtons = `
-                            <div class="btn-group w-100 shadow-sm">
-                                <button class="btn btn-sm btn-success" onclick="processApprove('${item.request_id}', 'Approved')"><i class="fas fa-check"></i> อนุมัติ</button>
-                                <button class="btn btn-sm btn-danger" onclick="processApprove('${item.request_id}', 'Rejected')"><i class="fas fa-times"></i> ปฏิเสธ</button>
-                                <button class="btn btn-sm btn-info text-dark" onclick="processReturn('${item.request_id}')"><i class="fas fa-undo"></i> คืนกลับ</button>
+                            <div class="btn-group w-100 shadow-sm rounded-pill overflow-hidden">
+                                <button class="btn btn-sm btn-success py-2" onclick="processApprove('${item.request_id}', 'Approved')"><i class="fas fa-check"></i> อนุมัติ</button>
+                                <button class="btn btn-sm btn-danger py-2" onclick="processApprove('${item.request_id}', 'Rejected')"><i class="fas fa-times"></i> ปฏิเสธ</button>
+                                <button class="btn btn-sm btn-info text-dark py-2" onclick="processReturn('${item.request_id}')"><i class="fas fa-undo"></i> คืนกลับ</button>
                             </div>
                         `;
                     }
 
-                    // Admin โชว์ปุ่มลบได้ตลอด
-                    let deleteBtn = currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger w-100 mt-1" onclick="promptDeleteByManager('${item.request_id}')"><i class="fas fa-trash"></i> แอดมินลบ</button>` : '';
+                    let deleteBtn = currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 mt-2" onclick="promptDeleteByManager('${item.request_id}')"><i class="fas fa-trash"></i> แอดมินลบทิ้ง</button>` : '';
 
                     pendingBody.innerHTML += `
                         <tr>
-                            <td><b>${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td>
-                            <td class="text-primary small">${item.dates.join('<br>')}</td>
-                            <td>${item.reason}</td>
-                            <td class="text-center">${actionButtons}${deleteBtn}</td>
+                            <td class="px-3"><b class="text-primary">${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td>
+                            <td class="text-secondary small fw-bold">${item.dates.join('<br>')}</td>
+                            <td class="text-muted">${item.reason}</td>
+                            <td class="text-center px-3">${actionButtons}${deleteBtn}</td>
                         </tr>
                     `;
                 } else {
                     historyCount++;
+                    let statusLabel = item.status;
+                    if(item.status === "Approved") statusLabel = "อนุมัติแล้ว";
+                    if(item.status === "Rejected") statusLabel = "ไม่อนุมัติ";
                     const badgeClass = item.status === 'Approved' ? 'bg-success' : 'bg-danger';
-                    let deleteBtn = `<button class="btn btn-sm btn-outline-danger" onclick="promptDeleteByManager('${item.request_id}')"><i class="fas fa-trash"></i> ลบทิ้ง</button>`;
+                    
+                    let deleteBtn = currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="promptDeleteByManager('${item.request_id}')"><i class="fas fa-trash"></i> ลบทิ้ง</button>` : `<span class="text-muted small"><i class="fas fa-lock"></i> ปิดจ๊อบ</span>`;
                     
                     historyBody.innerHTML += `
                         <tr>
-                            <td><b>${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td>
-                            <td class="small">${item.dates.join('<br>')}</td>
-                            <td><span class="badge ${badgeClass}">${item.status}</span></td>
-                            <td class="text-center">${deleteBtn}</td>
+                            <td class="px-3"><b class="text-primary">${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td>
+                            <td class="small fw-bold text-secondary">${item.dates.join('<br>')}</td>
+                            <td class="text-center"><span class="badge ${badgeClass}">${statusLabel}</span></td>
+                            <td class="text-center px-3">${deleteBtn}</td>
                         </tr>
                     `;
                 }
             });
 
-            if(pendingCount === 0) pendingBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">🎉 ไม่มีรายการรออนุมัติ</td></tr>`;
-            if(historyCount === 0) historyBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">ไม่พบประวัติการทำรายการ</td></tr>`;
+            if(pendingCount === 0) pendingBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">🎉 เย้! ไม่มีคำขอค้างพิจารณาค่ะ</td></tr>`;
+            if(historyCount === 0) historyBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">ไม่พบประวัติการทำรายการค่ะ</td></tr>`;
         }
 
         async function processApprove(reqId, statusAction, comment = '') {
             document.getElementById('loading-overlay').style.display = 'flex';
             try {
                 const res = await callGAS_JSONP('processApproval', { request_id: reqId, status: statusAction, manager_email: currentUser.email, comment: comment });
-                if(res.status === 'success') { Swal.fire('สำเร็จ', res.message, 'success'); reloadData(); }
-                else Swal.fire('ผิดพลาด', res.message, 'error');
+                if(res.status === 'success') { Swal.fire({title: 'สำเร็จ! ✨', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
+                else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
             } catch(e) { Swal.fire('Error', e.message, 'error'); }
             finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
         async function processReturn(reqId) {
             const { value: text } = await Swal.fire({
-                title: 'ส่งกลับให้แก้ไข',
+                title: 'ส่งกลับให้พนักงานแก้ไข',
                 input: 'textarea',
-                inputLabel: 'คอมเมนต์บอกพนักงานว่าต้องแก้ไขอะไร',
+                inputLabel: 'คอมเมนต์บอกพนักงานสักนิดว่าต้องแก้อะไร 💬',
                 inputPlaceholder: 'พิมพ์เหตุผลที่นี่...',
                 showCancelButton: true,
                 confirmButtonColor: '#0dcaf0',
-                confirmButtonText: 'ส่งกลับ'
+                cancelButtonColor: '#e9ecef',
+                confirmButtonText: '<span class="text-dark fw-bold">ส่งกลับ</span>',
+                cancelButtonText: '<span class="text-dark">ยกเลิก</span>'
             });
             if (text) {
                 processApprove(reqId, 'Returned', text);
@@ -702,15 +904,16 @@
 
         function promptDeleteByManager(reqId) {
             Swal.fire({
-                title: 'ยืนยันลบคำขอถาวร?', text: "ไม่สามารถกู้คืนได้ ประวัติการลาของพนักงานนี้จะหายไป", icon: 'warning',
-                showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ใช่, ลบข้อมูลทิ้ง!'
+                title: 'แอดมินยืนยันลบคำขอถาวร? 🗑️', text: "ประวัติการลาของพนักงานนี้จะหายไปจากระบบและไม่สามารถกู้คืนได้นะคะ", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#ff6b6b', cancelButtonColor: '#e9ecef', 
+                confirmButtonText: 'ใช่, ลบข้อมูลทิ้ง!', cancelButtonText: '<span class="text-dark">ยกเลิก</span>'
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     document.getElementById('loading-overlay').style.display = 'flex';
                     try {
                         const res = await callGAS_JSONP('deleteRequest', { request_id: reqId, manager_email: currentUser.email });
-                        if(res.status === 'success') { Swal.fire('ลบสำเร็จ', res.message, 'success'); reloadData(); }
-                        else Swal.fire('ผิดพลาด', res.message, 'error');
+                        if(res.status === 'success') { Swal.fire({title: 'ลบสำเร็จ', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
+                        else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
                     } catch(e) { Swal.fire('Error', e.message, 'error'); }
                     finally { document.getElementById('loading-overlay').style.display = 'none'; }
                 }
