@@ -313,13 +313,13 @@
             </div>
             <div class="sidebar-menu">
                 <a class="menu-item active" onclick="switchView('view-calendar', this)">
-                    <i class="fas fa-calendar-check"></i> ปฏิทินคำขอ
+                    <span style="display:inline-block; width:30px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:-3px;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M10.5 14.5a2.12 2.12 0 0 0-3 0 2.12 2.12 0 0 0 0 3L12 22l4.5-4.5a2.12 2.12 0 0 0 0-3 2.12 2.12 0 0 0-3 0l-1.5 1.5Z"/></svg></span> ปฏิทินคำขอ
                 </a>
                 <a class="menu-item" onclick="switchView('view-history', this)">
                     <i class="fas fa-clipboard-list"></i> ประวัติการลางาน
                 </a>
                 <a class="menu-item" id="menu-approval" onclick="switchView('view-approval', this)" style="display: none;">
-                    <i class="fas fa-crown"></i> <span id="menu-approval-text">พิจารณาคำขอ</span>
+                    <i class="fas fa-crown"></i> <span id="menu-approval-text">ผู้อนุมัติคำขอ</span>
                 </a>
             </div>
         </nav>
@@ -615,11 +615,9 @@
                 document.getElementById('menu-approval').style.display = 'none';
             } else {
                 document.getElementById('menu-approval').style.display = 'block';
-                if(currentUser.role === 'Admin') document.getElementById('menu-approval-text').innerText = 'จัดการระบบทั้งหมด (Admin)';
             }
 
             renderCalendar();
-            setupDragSelection();
             
             const urlParams = new URLSearchParams(window.location.search);
             const viewParam = urlParams.get('view');
@@ -638,9 +636,9 @@
             if(el) el.classList.add('active');
             currentView = viewId;
             const titles = { 
-                'view-calendar':'<i class="fas fa-calendar-alt me-2"></i>ปฏิทินยื่นเรื่อง', 
+                'view-calendar':`<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2" style="margin-top:-4px; color: var(--sweet-pink);"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M10.5 14.5a2.12 2.12 0 0 0-3 0 2.12 2.12 0 0 0 0 3L12 22l4.5-4.5a2.12 2.12 0 0 0 0-3 2.12 2.12 0 0 0-3 0l-1.5 1.5Z"/></svg>ปฏิทินยื่นเรื่อง`, 
                 'view-history':'<i class="fas fa-clipboard-list me-2"></i>ประวัติคำขอ', 
-                'view-approval':'<i class="fas fa-crown me-2"></i>สำหรับผู้พิจารณา' 
+                'view-approval':'<i class="fas fa-crown me-2"></i>ผู้อนุมัติคำขอ' 
             };
             document.getElementById('page-title').innerHTML = titles[viewId];
             reloadData();
