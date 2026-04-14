@@ -292,19 +292,21 @@
         }
         .signature-input:focus { outline: none; border-bottom-color: var(--sweet-pink); }
 
-        /* --- PDF Export FIX for Blank Pages and Truncated Tables --- */
+        /* --- PDF Export FIX --- */
         #pdf-export-wrapper {
             background: white;
-            padding: 20px;
+            padding: 30px;
             color: black;
             font-family: sans-serif;
-            width: 1400px; /* บังคับความกว้างให้ PDF แคปได้ครบ 31 วันโดยไม่โดนตัด */
+            width: 1400px;
         }
+        /* บังคับปลดล็อค position: sticky ออกตอน Export PDF เพราะ html2canvas แคปหน้าจอได้แต่หน้าขาวๆ หากติด Sticky */
         #pdf-export-wrapper .report-table th, 
         #pdf-export-wrapper .report-table td { 
-            background-color: #fff;
-            color: black;
-            padding: 4px 6px !important; /* บีบ padding ให้เล็กลงเพื่อให้พอดี A4 */
+            position: static !important; 
+            background-color: #fff !important;
+            color: black !important;
+            padding: 6px 8px !important; 
             font-size: 11px !important; 
             white-space: nowrap;
         }
@@ -574,7 +576,7 @@
                             </div>
 
                             <div class="mt-4 text-muted small border-top pt-3">
-                                <i class="fas fa-info-circle me-1"></i> สัญลักษณ์ <span class="day-check">✓</span> หมายถึงวันที่พนักงานได้รับอนุมัติให้ Work From Home
+                                <i class="fas fa-info-circle me-1"></i> สัญลักษณ์ <span class="day-check">&#10003;</span> หมายถึงวันที่พนักงานได้รับอนุมัติให้ Work From Home
                             </div>
                         </div>
                     </div>
@@ -957,12 +959,15 @@
                 html += `</tr>`;
             });
 
+            // จำนวนพนักงานที่มาปฏิบัติงาน = จำนวนพนักงานทั้งหมด - จำนวนพนักงานที่ WFH ในวันนั้น
             html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่มาปฏิบัติงาน (ราย)</td>`;
-            for(let i=1; i<=daysInMonth; i++) html += `<td>${totalEmp}</td>`;
+            for(let i=1; i<=daysInMonth; i++) html += `<td>${totalEmp - wfhCountPerDay[i]}</td>`;
             html += `</tr>`;
+            
             html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่ Work from Home (ราย)</td>`;
             for(let i=1; i<=daysInMonth; i++) html += `<td>${wfhCountPerDay[i]}</td>`;
             html += `</tr>`;
+            
             html += `<tr class="summary-row"><td colspan="3" class="text-end">พนักงานที่ Work from Home (ร้อยละ)</td>`;
             for(let i=1; i<=daysInMonth; i++) {
                 let percent = totalEmp > 0 ? Math.round((wfhCountPerDay[i] / totalEmp) * 100) : 0;
@@ -972,20 +977,28 @@
             container.innerHTML = html;
         }
 
-        // เพิ่มระบบ Preview (ยืนยัน) ก่อน Export Excel
         function exportToExcel() {
             const table = document.getElementById("export-report-table");
             if(!table) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
             
+            // นำตารางปัจจุบันมาทำภาพพรีวิวจำลอง (ลบ style บางส่วนไม่ให้ขัดกับ Swal)
+            const clonedTable = table.cloneNode(true);
+            clonedTable.classList.remove('report-table');
+            clonedTable.style.width = '100%';
+            const allCells = clonedTable.querySelectorAll('th, td');
+            allCells.forEach(c => { c.style.position = 'static'; c.style.fontSize = '12px'; c.style.padding = '4px'; });
+
+            const previewHtml = `<div style="max-height: 50vh; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: white;">${clonedTable.outerHTML}</div>`;
+            
             Swal.fire({
-                title: 'ยืนยันการ Export Excel',
-                text: "กรุณาตรวจสอบความถูกต้องของข้อมูลในตารางบนหน้าจอก่อนดาวน์โหลดไฟล์ค่ะ",
-                icon: 'question',
+                title: 'พรีวิวข้อมูล Excel',
+                html: previewHtml,
+                width: '90%',
                 showCancelButton: true,
                 confirmButtonColor: '#20c997',
                 cancelButtonColor: '#ff758c',
-                confirmButtonText: '<i class="fas fa-file-excel"></i> ตกลง, ดาวน์โหลด',
-                cancelButtonText: 'ยกเลิก'
+                confirmButtonText: '<i class="fas fa-file-excel"></i> ยืนยันดาวน์โหลด Excel',
+                cancelButtonText: 'ปิดพรีวิว'
             }).then((result) => {
                 if (result.isConfirmed) {
                     const wb = XLSX.utils.table_to_book(table, {sheet: "WFH Report"});
@@ -995,104 +1008,107 @@
             });
         }
 
-        // เพิ่มระบบ Preview (ยืนยัน) ก่อน Export PDF พร้อมแก้บั๊ก PDF ขาว และตารางโดนตัด
         function exportToPDF() {
             const tableContainer = document.getElementById("report-table-container");
             const sigContainer = document.getElementById("report-signature-section");
             if(!tableContainer.innerHTML.trim()) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
             
-            Swal.fire({
-                title: 'ยืนยันการ Export PDF',
-                text: "กรุณาตรวจสอบความถูกต้องของตารางและลายเซ็นก่อนดาวน์โหลดไฟล์ค่ะ",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#ff758c',
-                confirmButtonText: '<i class="fas fa-file-pdf"></i> ตกลง, ดาวน์โหลด',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById('loading-overlay').style.display = 'flex';
-                    
-                    const pdfWrapper = document.createElement('div'); 
-                    pdfWrapper.id = 'pdf-export-wrapper';
-                    // แก้บั๊ก PDF หน้าขาว: จัดตำแหน่งไว้บนสุด แต่ซ่อนหลัง loading overlay และบังคับขนาดเพื่อไม่ให้ตารางขาด
-                    pdfWrapper.style.width = '1400px'; 
-                    pdfWrapper.style.position = 'absolute';
-                    pdfWrapper.style.top = '0';
-                    pdfWrapper.style.left = '0';
-                    pdfWrapper.style.zIndex = '-1'; 
-                    
-                    const monthInput = document.getElementById('report-month-picker').value;
-                    const [y, m] = monthInput.split('-');
-                    const title = document.createElement('h3');
-                    title.innerHTML = `ตารางกำหนดการปฏิบัติงาน (กรณี WFH) <br><small>ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</small>`;
-                    title.style.textAlign = 'center'; 
-                    title.style.marginBottom = '20px';
-                    
-                    const clonedTable = tableContainer.cloneNode(true);
-                    clonedTable.style.maxHeight = 'none'; 
-                    clonedTable.style.overflow = 'visible';
-                    clonedTable.style.border = 'none';
-                    clonedTable.style.boxShadow = 'none';
-                    
-                    const clonedSig = sigContainer.cloneNode(true);
-                    clonedSig.style.pageBreakInside = 'avoid';
-                    
-                    const origInputs = sigContainer.querySelectorAll('input[type="text"]');
-                    const cloneInputs = clonedSig.querySelectorAll('input[type="text"]');
-                    origInputs.forEach((input, idx) => {
-                        const span = document.createElement('span');
-                        span.innerText = input.value || '......................................';
-                        
-                        if(input.id.includes('position')) {
-                            span.style.borderBottom = 'none';
-                        } else {
-                            span.style.borderBottom = '1px dotted #000'; 
-                        }
-                        
-                        span.style.padding = '0 10px';
-                        span.style.display = 'inline-block'; 
-                        span.style.minWidth = input.style.width || '150px'; 
-                        span.style.fontWeight = 'bold';
-                        cloneInputs[idx].parentNode.replaceChild(span, cloneInputs[idx]);
-                    });
+            document.getElementById('loading-overlay').style.display = 'flex';
+            window.scrollTo(0, 0); // เลื่อนขึ้นบนสุดป้องกัน html2canvas เรนเดอร์ตำแหน่งเพี้ยน
+            
+            const pdfWrapper = document.createElement('div'); 
+            pdfWrapper.id = 'pdf-export-wrapper';
+            pdfWrapper.style.width = '1400px'; 
+            pdfWrapper.style.position = 'absolute';
+            pdfWrapper.style.top = '0';
+            pdfWrapper.style.left = '0';
+            pdfWrapper.style.zIndex = '-1'; // เอาไว้หลังสุดไม่บังตา แต่ html2canvas มองเห็น
+            pdfWrapper.style.backgroundColor = '#ffffff';
+            
+            const monthInput = document.getElementById('report-month-picker').value;
+            const [y, m] = monthInput.split('-');
+            const title = document.createElement('h3');
+            title.innerHTML = `ตารางกำหนดการปฏิบัติงาน (กรณี WFH) <br><small>ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</small>`;
+            title.style.textAlign = 'center'; 
+            title.style.marginBottom = '20px';
+            
+            const clonedTable = tableContainer.cloneNode(true);
+            clonedTable.style.maxHeight = 'none'; 
+            clonedTable.style.overflow = 'visible';
+            clonedTable.style.border = 'none';
+            clonedTable.style.boxShadow = 'none';
+            
+            const allCells = clonedTable.querySelectorAll('th, td');
+            allCells.forEach(cell => { cell.style.position = 'static'; });
+            const tbl = clonedTable.querySelector('table');
+            if(tbl) { tbl.style.width = '100%'; tbl.style.minWidth = '100%'; }
+            
+            const clonedSig = sigContainer.cloneNode(true);
+            clonedSig.style.pageBreakInside = 'avoid';
+            
+            const origInputs = sigContainer.querySelectorAll('input[type="text"]');
+            const cloneInputs = clonedSig.querySelectorAll('input[type="text"]');
+            origInputs.forEach((input, idx) => {
+                const span = document.createElement('span');
+                span.innerText = input.value || '......................................';
+                if(input.id.includes('position')) { span.style.borderBottom = 'none'; } 
+                else { span.style.borderBottom = '1px dotted #000'; }
+                span.style.padding = '0 10px'; span.style.display = 'inline-block'; 
+                span.style.minWidth = input.style.width || '150px'; span.style.fontWeight = 'bold';
+                cloneInputs[idx].parentNode.replaceChild(span, cloneInputs[idx]);
+            });
 
-                    const cloneUploads = clonedSig.querySelectorAll('.signature-upload');
-                    cloneUploads.forEach(u => { 
-                        u.style.border = 'none'; 
-                        u.style.background = 'transparent'; 
-                        u.style.height = 'auto'; 
-                        u.style.minHeight = '70px'; 
-                    });
-                    const clonePlaceholders = clonedSig.querySelectorAll('span[id$="-placeholder"]');
-                    clonePlaceholders.forEach(p => p.style.display = 'none');
-                    
-                    const origImgs = sigContainer.querySelectorAll('img');
-                    const cloneImgs = clonedSig.querySelectorAll('img');
-                    origImgs.forEach((img, idx) => {
-                        cloneImgs[idx].src = img.src;
-                        if(img.src) cloneImgs[idx].style.display = 'inline-block';
-                    });
-                    
-                    pdfWrapper.appendChild(title); 
-                    pdfWrapper.appendChild(clonedTable); 
-                    pdfWrapper.appendChild(clonedSig);
-                    document.body.appendChild(pdfWrapper);
+            const cloneUploads = clonedSig.querySelectorAll('.signature-upload');
+            cloneUploads.forEach(u => { u.style.border = 'none'; u.style.background = 'transparent'; u.style.height = 'auto'; u.style.minHeight = '70px'; });
+            const clonePlaceholders = clonedSig.querySelectorAll('span[id$="-placeholder"]');
+            clonePlaceholders.forEach(p => p.style.display = 'none');
+            
+            const origImgs = sigContainer.querySelectorAll('img');
+            const cloneImgs = clonedSig.querySelectorAll('img');
+            origImgs.forEach((img, idx) => {
+                cloneImgs[idx].src = img.src;
+                if(img.src) cloneImgs[idx].style.display = 'inline-block';
+            });
+            
+            pdfWrapper.appendChild(title); 
+            pdfWrapper.appendChild(clonedTable); 
+            pdfWrapper.appendChild(clonedSig);
+            document.body.appendChild(pdfWrapper);
 
-                    const opt = {
-                        margin: [0.3, 0.3, 0.3, 0.3], 
-                        filename: `WFH_Report_${monthInput}.pdf`,
-                        image: { type: 'jpeg', quality: 0.98 }, 
-                        html2canvas: { scale: 2, useCORS: true, windowWidth: 1400, scrollY: 0 }, 
-                        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-                    };
+            const opt = {
+                margin: [0.3, 0.3, 0.3, 0.3], 
+                filename: `WFH_Report_${monthInput}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400, scrollY: 0, x: 0, y: 0 }, 
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
 
-                    html2pdf().set(opt).from(pdfWrapper).save().then(() => {
-                        document.body.removeChild(pdfWrapper);
-                        document.getElementById('loading-overlay').style.display = 'none';
-                    });
-                }
+            // ดึงไฟล์ PDF เป็น Blob URL และแสดงให้ผู้ใช้ดูก่อนกดโหลด
+            html2pdf().set(opt).from(pdfWrapper).output('bloburl').then(function(pdfUrl) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                
+                Swal.fire({
+                    title: 'พรีวิวเอกสาร PDF',
+                    html: `<iframe src="${pdfUrl}#toolbar=0&navpanes=0" style="width: 100%; height: 60vh; border: 1px solid #ddd; border-radius: 8px; background: #f8f9fa;"></iframe>`,
+                    width: '85%',
+                    showCancelButton: true,
+                    confirmButtonColor: '#20c997',
+                    cancelButtonColor: '#ff758c',
+                    confirmButtonText: '<i class="fas fa-download"></i> ยืนยันดาวน์โหลด PDF',
+                    cancelButtonText: 'ปิดพรีวิว'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const a = document.createElement('a');
+                        a.href = pdfUrl;
+                        a.download = opt.filename;
+                        a.click();
+                    }
+                    document.body.removeChild(pdfWrapper);
+                });
+            }).catch(err => {
+                document.body.removeChild(pdfWrapper);
+                document.getElementById('loading-overlay').style.display = 'none';
+                Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้างพรีวิว PDF: ' + err.message, 'error');
             });
         }
 
