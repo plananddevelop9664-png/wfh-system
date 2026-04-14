@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <!-- เพิ่ม Library สำหรับ Export PDF และ Excel -->
+    <!-- Libraries สำหรับ Export PDF และ Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -215,7 +215,7 @@
         .step-returned .flow-icon { background: var(--status-info); }
         .step-returned .flow-label { color: var(--status-info); }
 
-        /* Report Table Styling (เพิ่มใหม่) */
+        /* Report Table Styling */
         .report-table-container {
             max-height: 600px;
             overflow: auto;
@@ -263,7 +263,7 @@
         .summary-row td { background-color: #fff5f8 !important; }
         .day-check { color: var(--status-success); font-size: 1.1rem; }
         
-        /* Signature Styles (เพิ่มใหม่) */
+        /* Signature Styles */
         .signature-upload {
             border: 2px dashed #ffb6c1;
             border-radius: 15px;
@@ -292,13 +292,28 @@
         }
         .signature-input:focus { outline: none; border-bottom-color: var(--sweet-pink); }
 
+        /* --- PDF Export FIX for Truncated Tables --- */
         #pdf-export-wrapper {
             background: white;
             padding: 20px;
             color: black;
             font-family: sans-serif;
+            width: 1200px; /* บังคับความกว้างให้ PDF แคปได้ครบ 31 วันโดยไม่โดนตัด */
         }
-        #pdf-export-wrapper .report-table th { background-color: #f8f9fa; color: black; }
+        #pdf-export-wrapper .report-table th, 
+        #pdf-export-wrapper .report-table td { 
+            background-color: #fff;
+            color: black;
+            padding: 4px 6px !important; /* บีบ padding ให้เล็กลงเพื่อให้พอดี A4 */
+            font-size: 11px !important; 
+            white-space: nowrap;
+        }
+        #pdf-export-wrapper .report-table thead th {
+            background-color: #f8f9fa !important;
+        }
+        #pdf-export-wrapper .day-check {
+            font-size: 0.9rem;
+        }
 
         /* Footer & Modals */
         .footer { background: #ffffff; color: #ffb6c1; text-align: center; padding: 20px 0; width: 100%; border-top: 1px solid var(--sweet-bg); font-weight: 300;}
@@ -394,9 +409,8 @@
                     <i class="fas fa-clipboard-list"></i> ประวัติการลางาน
                 </a>
                 <a class="menu-item" id="menu-approval" onclick="switchView('view-approval', this)" style="display: none;">
-                    <i class="fas fa-crown"></i> <span id="menu-approval-text">ผู้อนุมัติคำขอ</span>
+                    <i class="fas fa-crown"></i> <span>ผู้อนุมัติคำขอ</span>
                 </a>
-                <!-- เมนูใหม่: รายงาน (แสดงเฉพาะ Manager/Admin) -->
                 <a class="menu-item" id="menu-report" onclick="switchView('view-report', this)" style="display: none;">
                     <i class="fas fa-file-excel"></i> <span>รายงานตาราง WFH</span>
                 </a>
@@ -412,7 +426,6 @@
                         <div class="fw-bold text-dark" id="user-display-name">Name</div>
                         <div class="small text-muted" id="user-display-dept">Dept</div>
                     </div>
-                    <!-- ปุ่ม Logout -->
                     <button class="btn btn-outline-danger btn-sm px-3 py-2 fw-bold" onclick="doLogout()"><i class="fas fa-sign-out-alt me-1"></i> ออกจากระบบ</button>
                 </div>
             </div>
@@ -468,7 +481,6 @@
 
                 <!-- VIEW 3: MANAGER/ADMIN APPROVAL -->
                 <div id="view-approval" class="app-view">
-                    
                     <div class="card mb-4 border-start border-warning border-4">
                         <div class="card-body p-4">
                             <h5 class="fw-bold text-warning mb-3"><i class="fas fa-envelope-open-text me-2"></i> รายการรอพิจารณา (Pending / Returned)</h5>
@@ -537,7 +549,12 @@
                                         <input type="file" id="sig-manager-file" accept="image/png, image/jpeg" style="display:none;" onchange="previewSig(this, 'sig-manager-img', 'sig-manager-placeholder')">
                                         
                                         <div class="mt-2">( <input type="text" id="sig-manager-name" class="signature-input" placeholder="พิมพ์ชื่อผู้บังคับบัญชา"> )</div>
-                                        <p class="mb-1 text-muted small fw-bold mt-1">ผู้ตรวจสอบ / ผู้บังคับบัญชา</p>
+                                        
+                                        <!-- แก้ไขให้สามารถกรอกตำแหน่งเองได้ -->
+                                        <div class="mt-1 d-flex align-items-center justify-content-center text-muted small fw-bold">
+                                            ตำแหน่ง : <input type="text" id="sig-manager-position" class="signature-input ms-1" style="width: 140px; font-size: 0.85rem;" value="ผู้บังคับบัญชา" placeholder="พิมพ์ตำแหน่ง">
+                                        </div>
+                                        
                                         <div class="mt-1 small">วันที่: <input type="text" id="sig-manager-date" class="signature-input" style="width: 120px;"></div>
                                     </div>
                                     
@@ -550,7 +567,12 @@
                                         <input type="file" id="sig-staff-file" accept="image/png, image/jpeg" style="display:none;" onchange="previewSig(this, 'sig-staff-img', 'sig-staff-placeholder')">
                                         
                                         <div class="mt-2">( <input type="text" id="sig-staff-name" class="signature-input" placeholder="พิมพ์ชื่อผู้จัดทำ"> )</div>
-                                        <p class="mb-1 text-muted small fw-bold mt-1">ผู้ปฏิบัติงาน / ผู้จัดทำ</p>
+                                        
+                                        <!-- แก้ไขให้สามารถกรอกตำแหน่งเองได้ -->
+                                        <div class="mt-1 d-flex align-items-center justify-content-center text-muted small fw-bold">
+                                            ตำแหน่ง : <input type="text" id="sig-staff-position" class="signature-input ms-1" style="width: 140px; font-size: 0.85rem;" value="ผู้ปฏิบัติงาน" placeholder="พิมพ์ตำแหน่ง">
+                                        </div>
+                                        
                                         <div class="mt-1 small">วันที่: <input type="text" id="sig-staff-date" class="signature-input" style="width: 120px;"></div>
                                     </div>
                                 </div>
@@ -597,7 +619,7 @@
         </div>
     </div>
 
-    <!-- Modal แก้ไขเหตุผล (User) -->
+    <!-- Modal แก้ไขเหตุผล -->
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -621,13 +643,12 @@
         </div>
     </div>
 
-    <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Script -->
     <script>
         // ==========================================
-        // ⚠️ สำคัญมาก: เปลี่ยน SCRIPT_URL ตรงนี้ ⚠️
+        // ⚠️ สำคัญมาก: เปลี่ยน SCRIPT_URL ให้เป็นลิงก์ของคุณที่ Deploy ล่าสุด ⚠️
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxERK_Io2Dum6ErJcP6JC4Dv4cM1nhAS7X_2L57y_o9p21QMSEzV-NJvBKDh0rh5uiM/exec"; 
         
@@ -635,10 +656,10 @@
         let currentDate = new Date();
         let selectedDates = new Set();
         let isDragging = false;
-        let dragMode = 'select'; // เพิ่มตัวแปรเพื่อจำว่ากำลังลาก "เลือก" หรือ "ยกเลิก"
+        let dragMode = 'select';
         let employeeHistory = []; 
         let currentView = 'view-calendar';
-        let reportDataStore = []; // เก็บข้อมูล Report ไว้ Export
+        let reportDataStore = [];
 
         const thMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
         const daysOfWeek = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -650,7 +671,6 @@
             wfhModal = new bootstrap.Modal(document.getElementById('wfhModal'));
             editModal = new bootstrap.Modal(document.getElementById('editModal'));
 
-            // ตั้งค่าค่าเริ่มต้น Date Picker หน้า Report
             const today = new Date();
             document.getElementById('report-month-picker').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
@@ -660,16 +680,10 @@
             const urlParams = new URLSearchParams(window.location.search);
             const viewParam = urlParams.get('view');
             if(viewParam === 'approval') {
-                Swal.fire({
-                    title: '🌸 ยินดีต้อนรับ', 
-                    text: 'กรุณาเข้าสู่ระบบเพื่อพิจารณาคำขอค่ะ', 
-                    icon: 'info',
-                    confirmButtonColor: '#ff758c'
-                });
+                Swal.fire({title: '🌸 ยินดีต้อนรับ', text: 'กรุณาเข้าสู่ระบบเพื่อพิจารณาคำขอค่ะ', icon: 'info', confirmButtonColor: '#ff758c'});
             }
         });
 
-        /* --- API Call --- */
         function callGAS_JSONP(action, paramsObj) {
             return new Promise((resolve, reject) => {
                 const callbackName = 'jsonp_cb_' + Math.round(100000 * Math.random());
@@ -688,56 +702,34 @@
             });
         }
 
-        /* --- Auth Logic --- */
         async function doLogin() {
             if(SCRIPT_URL.includes("xxxxxx-EXAMPLE")) return Swal.fire({title: 'อุ๊ปส์!', text: 'อย่าลืมตั้งค่า SCRIPT_URL ในโค้ดก่อนนะคะ 🥺', icon: 'error', confirmButtonColor: '#ff758c'});
 
             const user = document.getElementById('login-user').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
-            
             document.getElementById('loading-overlay').style.display = 'flex';
             try {
                 const res = await callGAS_JSONP('login', { username: user, password: pass });
                 if(res.status === 'success') {
                     currentUser = res.data;
                     initApp();
-                } else {
-                    Swal.fire({title: 'เข้าสู่ระบบไม่สำเร็จ', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
-                }
-            } catch(e) {
-                Swal.fire({title: 'Error', text: e.message, icon: 'error', confirmButtonColor: '#ff758c'});
-            } finally {
-                document.getElementById('loading-overlay').style.display = 'none';
-            }
+                } else { Swal.fire({title: 'เข้าสู่ระบบไม่สำเร็จ', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'}); }
+            } catch(e) { Swal.fire({title: 'Error', text: e.message, icon: 'error', confirmButtonColor: '#ff758c'}); } 
+            finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
-        // ฟังก์ชัน Logout แบบมี Pop-up ยืนยันสไตล์หวานๆ
         function doLogout() {
             Swal.fire({
-                title: 'จะไปแล้วหรอคะ? 🥺',
-                text: "ยืนยันการออกจากระบบ",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#ff758c',
-                cancelButtonColor: '#e9ecef',
-                confirmButtonText: 'ใช่, ออกจากระบบ',
-                cancelButtonText: '<span style="color:#555">ยกเลิก</span>'
+                title: 'จะไปแล้วหรอคะ? 🥺', text: "ยืนยันการออกจากระบบ", icon: 'question',
+                showCancelButton: true, confirmButtonColor: '#ff758c', cancelButtonColor: '#e9ecef',
+                confirmButtonText: 'ใช่, ออกจากระบบ', cancelButtonText: '<span style="color:#555">ยกเลิก</span>'
             }).then((result) => {
                 if (result.isConfirmed) {
                     currentUser = null;
                     document.getElementById('app-container').style.display = 'none';
                     document.getElementById('login-container').style.display = 'flex';
-                    document.getElementById('login-user').value = '';
-                    document.getElementById('login-pass').value = '';
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'ออกจากระบบเรียบร้อยแล้วค่ะ 👋',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 2000
-                    });
+                    document.getElementById('login-user').value = ''; document.getElementById('login-pass').value = '';
+                    Swal.fire({icon: 'success', title: 'ออกจากระบบเรียบร้อยแล้วค่ะ 👋', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000});
                 }
             });
         }
@@ -757,7 +749,6 @@
                 document.getElementById('menu-approval').style.display = 'block';
                 document.getElementById('menu-report').style.display = 'block';
             }
-
             renderCalendar();
             
             const urlParams = new URLSearchParams(window.location.search);
@@ -769,7 +760,6 @@
             }
         }
 
-        /* --- View Routing --- */
         function switchView(viewId, el) {
             document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
@@ -793,44 +783,43 @@
             try {
                 if(currentView === 'view-calendar') {
                     const res = await callGAS_JSONP('getData', payload);
+                    if(res.status === 'error') throw new Error(res.message);
                     employeeHistory = res.data || [];
-                    selectedDates.clear();
-                    renderCalendar();
+                    selectedDates.clear(); renderCalendar();
                 } else if (currentView === 'view-history') {
                     const res = await callGAS_JSONP('getHistory', payload);
-                    renderHistoryTable(res.data);
+                    if(res.status === 'error') throw new Error(res.message);
+                    renderHistoryTable(res.data || []);
                 } else if (currentView === 'view-approval' && currentUser.role !== 'User') {
                     const res = await callGAS_JSONP('getApprovals', payload);
-                    renderApprovalTable(res.data);
+                    if(res.status === 'error') throw new Error(res.message);
+                    renderApprovalTable(res.data || []);
                 } else if (currentView === 'view-report' && currentUser.role !== 'User') {
-                    // ซิงค์เดือนของ Report ให้ตรงกับเดือนที่เปิดอยู่ในปฏิทินปัจจุบัน
                     const y = currentDate.getFullYear();
                     const m = String(currentDate.getMonth() + 1).padStart(2, '0');
                     document.getElementById('report-month-picker').value = `${y}-${m}`;
                     loadReportData();
                 }
-            } catch (err) { Swal.fire({title: 'เชื่อมต่อ Server ไม่สำเร็จ', text: err.message, icon: 'error', confirmButtonColor: '#ff758c'}); } 
+            } catch (err) { 
+                Swal.fire({title: 'แจ้งเตือนจากระบบ', text: err.message, icon: 'warning', confirmButtonColor: '#ff758c'}); 
+            } 
             finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
         /* --- CALENDAR --- */
         function renderCalendar() {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear(); const month = currentDate.getMonth();
             document.getElementById('month-year-display').innerText = `${thMonths[month]} ${year + 543}`;
             const calendarBody = document.getElementById('calendar-body');
             calendarBody.innerHTML = '';
-
             daysOfWeek.forEach(day => { calendarBody.innerHTML += `<div class="calendar-cell header">${day}</div>`; });
-            const firstDayIndex = new Date(year, month, 1).getDay();
-            const lastDate = new Date(year, month + 1, 0).getDate();
-
+            const firstDayIndex = new Date(year, month, 1).getDay(); const lastDate = new Date(year, month + 1, 0).getDate();
             for (let i = 0; i < firstDayIndex; i++) { calendarBody.innerHTML += `<div class="calendar-cell empty"></div>`; }
+            
             for (let i = 1; i <= lastDate; i++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                 const cell = document.createElement('div');
-                cell.className = 'calendar-cell date-cell';
-                cell.dataset.date = dateStr;
+                cell.className = 'calendar-cell date-cell'; cell.dataset.date = dateStr;
                 cell.innerHTML = `<div class="date-number">${i}</div>`;
 
                 const history = employeeHistory.find(h => h.date.substring(0,10) === dateStr);
@@ -842,16 +831,11 @@
                     if(history.status === "Returned") statusLabel = "ให้แก้ไข";
 
                     cell.innerHTML += `<div class="status-badge status-${history.status}">${statusLabel}</div>`;
-                    if(history.status !== 'Returned') {
-                        cell.style.pointerEvents = 'none'; cell.style.opacity = '0.7';
-                    }
-                } else if (selectedDates.has(dateStr)) {
-                    cell.classList.add('selected');
-                }
+                    if(history.status !== 'Returned') { cell.style.pointerEvents = 'none'; cell.style.opacity = '0.7'; }
+                } else if (selectedDates.has(dateStr)) { cell.classList.add('selected'); }
                 calendarBody.appendChild(cell);
             }
-            const total = firstDayIndex + lastDate;
-            const remaining = (Math.ceil(total / 7) * 7) - total;
+            const total = firstDayIndex + lastDate; const remaining = (Math.ceil(total / 7) * 7) - total;
             for(let i = 0; i < remaining; i++) calendarBody.innerHTML += `<div class="calendar-cell empty"></div>`;
             updateRequestBtn();
         }
@@ -860,56 +844,28 @@
         
         function setupDragSelection() {
             const calendar = document.getElementById('calendar-body');
-            
-            // ป้องกัน Native Dragging ของบราวเซอร์ที่ทำให้การลากสะดุด
             calendar.addEventListener('dragstart', (e) => e.preventDefault());
-            
             calendar.addEventListener('mousedown', (e) => {
                 const cell = e.target.closest('.date-cell');
                 if (cell && cell.style.pointerEvents !== 'none') { 
                     isDragging = true; 
-                    
-                    // เช็คช่องแรกที่คลิกว่าเป็นการเลือก หรือยกเลิก
-                    if (selectedDates.has(cell.dataset.date)) {
-                        dragMode = 'deselect';
-                        selectedDates.delete(cell.dataset.date);
-                        cell.classList.remove('selected');
-                    } else {
-                        dragMode = 'select';
-                        selectedDates.add(cell.dataset.date);
-                        cell.classList.add('selected');
-                    }
+                    if (selectedDates.has(cell.dataset.date)) { dragMode = 'deselect'; selectedDates.delete(cell.dataset.date); cell.classList.remove('selected'); } 
+                    else { dragMode = 'select'; selectedDates.add(cell.dataset.date); cell.classList.add('selected'); }
                     updateRequestBtn(); 
                 }
             });
-            
             calendar.addEventListener('mouseover', (e) => {
                 if (isDragging) {
                     const cell = e.target.closest('.date-cell');
                     if (cell && cell.style.pointerEvents !== 'none') {
-                        if (dragMode === 'select' && !selectedDates.has(cell.dataset.date)) {
-                            selectedDates.add(cell.dataset.date); 
-                            cell.classList.add('selected'); 
-                            updateRequestBtn();
-                        } else if (dragMode === 'deselect' && selectedDates.has(cell.dataset.date)) {
-                            selectedDates.delete(cell.dataset.date); 
-                            cell.classList.remove('selected'); 
-                            updateRequestBtn();
-                        }
+                        if (dragMode === 'select' && !selectedDates.has(cell.dataset.date)) { selectedDates.add(cell.dataset.date); cell.classList.add('selected'); updateRequestBtn(); } 
+                        else if (dragMode === 'deselect' && selectedDates.has(cell.dataset.date)) { selectedDates.delete(cell.dataset.date); cell.classList.remove('selected'); updateRequestBtn(); }
                     }
                 }
             });
-            
             document.addEventListener('mouseup', () => isDragging = false);
         }
 
-        function toggleDate(cell) {
-            const date = cell.dataset.date;
-            if (selectedDates.has(date)) { selectedDates.delete(date); cell.classList.remove('selected'); }
-            else { selectedDates.add(date); cell.classList.add('selected'); }
-            updateRequestBtn();
-        }
-        
         function updateRequestBtn() {
             const btn = document.getElementById('btn-request');
             btn.innerHTML = `<i class="fas fa-paper-plane me-2"></i> ยื่นเรื่อง WFH (${selectedDates.size} วัน)`;
@@ -924,232 +880,34 @@
         async function submitWFH() {
             const reason = document.getElementById('form-reason').value.trim();
             if(!reason) return Swal.fire({title: 'เตือนนิดนึงจ้า', text: 'อย่าลืมกรอกเหตุผลนะ', icon: 'warning', confirmButtonColor: '#ff758c'});
-
             const payload = {
-                employee_id: currentUser.employee_id,
-                name: currentUser.name,
-                department: currentUser.department,
-                email: currentUser.email,
-                manager_email: currentUser.manager_email,
-                reason: reason,
-                dates: Array.from(selectedDates)
+                employee_id: currentUser.employee_id, name: currentUser.name, department: currentUser.department, 
+                email: currentUser.email, manager_email: currentUser.manager_email, reason: reason, dates: Array.from(selectedDates)
             };
-
             wfhModal.hide(); document.getElementById('loading-overlay').style.display = 'flex';
             try {
                 const res = await callGAS_JSONP('submit', { payload: JSON.stringify(payload) });
-                if (res.status === 'success') { 
-                    Swal.fire({title: 'สำเร็จ! 🎉', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); 
-                    document.getElementById('form-reason').value = '';
-                    reloadData(); 
-                }
+                if (res.status === 'success') { Swal.fire({title: 'สำเร็จ! 🎉', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); document.getElementById('form-reason').value = ''; reloadData(); }
                 else Swal.fire({title: 'มีปัญหาเล็กน้อย', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
             } catch (err) { Swal.fire({title: 'ผิดพลาด', text: err.message, icon: 'error', confirmButtonColor: '#ff758c'}); }
             finally { document.getElementById('loading-overlay').style.display = 'none'; }
-        }
-
-        /* --- HISTORY VIEW (User) --- */
-        function createProcessFlowHTML(status) {
-            let step3Class = '', step3Icon = '<i class="fas fa-ellipsis-h"></i>', step3Label = 'รอพิจารณา';
-            
-            if(status === 'Approved') { step3Class = 'step-approved'; step3Icon = '<i class="fas fa-check"></i>'; step3Label = 'อนุมัติแล้ว'; } 
-            else if (status === 'Rejected') { step3Class = 'step-rejected'; step3Icon = '<i class="fas fa-times"></i>'; step3Label = 'ไม่อนุมัติ'; } 
-            else if (status === 'Returned') { step3Class = 'step-returned'; step3Icon = '<i class="fas fa-undo"></i>'; step3Label = 'ส่งกลับแก้ไข'; }
-
-            return `
-            <div class="process-flow">
-                <div class="flow-step step-submit"><div class="flow-icon"><i class="fas fa-paper-plane"></i></div><div class="flow-label">ส่งแล้ว</div></div>
-                <div class="flow-step ${status === 'Pending' ? 'step-pending' : 'step-submit'}"><div class="flow-icon"><i class="fas fa-heart"></i></div><div class="flow-label">รอหัวหน้า</div></div>
-                <div class="flow-step ${step3Class}"><div class="flow-icon">${step3Icon}</div><div class="flow-label">${step3Label}</div></div>
-            </div>`;
-        }
-
-        function renderHistoryTable(data) {
-            const tbody = document.getElementById('history-table-body');
-            tbody.innerHTML = '';
-            if(!data || data.length === 0) return tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">ยังไม่มีประวัติการทำรายการค่ะ 😊</td></tr>`;
-
-            data.forEach(item => {
-                let actionBtns = `<span class="text-muted small"><i class="fas fa-lock"></i> ล็อคข้อมูล</span>`;
-                if(item.status === 'Pending' || item.status === 'Returned') {
-                    let btnText = item.status === 'Returned' ? 'แก้ไขส่งใหม่' : 'แก้ไขเหตุผล';
-                    let btnColor = item.status === 'Returned' ? 'btn-info text-dark' : 'btn-outline-warning text-dark';
-                    let escapedComment = item.manager_comment ? item.manager_comment.replace(/'/g, "\\'") : '';
-                    actionBtns = `<button class="btn btn-sm ${btnColor} w-100 fw-bold rounded-pill shadow-sm" onclick="promptEdit('${item.request_id}', '${item.reason}', '${escapedComment}')"><i class="fas fa-magic"></i> ${btnText}</button>`;
-                }
-                
-                let commentHtml = '';
-                if(item.status === 'Returned' && item.manager_comment) {
-                    commentHtml = `<div class="alert alert-light border border-info p-2 mt-2 mb-0 small" style="border-radius:10px;"><i class="fas fa-comment-dots text-info"></i> <b>หัวหน้าคอมเมนต์:</b> <span class="text-secondary">${item.manager_comment}</span></div>`;
-                }
-
-                let prefixName = currentUser.role === 'Admin' ? `<b class="text-primary">${item.employee_name}</b><br>` : '';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="small px-3">${item.dates.join('<br>')}</td>
-                        <td>${prefixName}<span class="text-secondary">${item.reason}</span>${commentHtml}</td>
-                        <td class="text-center">${createProcessFlowHTML(item.status)}</td>
-                        <td class="text-center px-3">${actionBtns}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        function promptEdit(reqId, oldReason, managerComment) {
-            document.getElementById('edit-req-id').value = reqId;
-            document.getElementById('edit-reason').value = oldReason;
-            
-            const commentDiv = document.getElementById('edit-manager-comment');
-            if(managerComment) {
-                commentDiv.innerHTML = `<i class="fas fa-comment-dots"></i> <strong>หัวหน้าให้แก้ไข:</strong> ${managerComment}`;
-                commentDiv.style.display = 'block';
-            } else {
-                commentDiv.style.display = 'none';
-            }
-            editModal.show();
-        }
-
-        async function saveEdit() {
-            const reqId = document.getElementById('edit-req-id').value;
-            const newReason = document.getElementById('edit-reason').value.trim();
-            if(!newReason) return Swal.fire({title:'เตือนนิดนึง', text:'อย่าลืมระบุเหตุผลใหม่นะคะ', icon:'warning', confirmButtonColor: '#ff758c'});
-
-            editModal.hide(); document.getElementById('loading-overlay').style.display = 'flex';
-            try {
-                const res = await callGAS_JSONP('editRequest', { payload: JSON.stringify({request_id: reqId, new_reason: newReason}) });
-                if(res.status === 'success') { Swal.fire({title: 'ส่งใหม่สำเร็จ! ✨', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
-                else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
-            } catch(e) { Swal.fire('Error', e.message, 'error'); }
-            finally { document.getElementById('loading-overlay').style.display = 'none'; }
-        }
-
-        /* --- MANAGER/ADMIN APPROVAL VIEW --- */
-        function renderApprovalTable(data) {
-            const pendingBody = document.getElementById('approval-pending-body');
-            const historyBody = document.getElementById('approval-history-body');
-            pendingBody.innerHTML = ''; historyBody.innerHTML = '';
-            
-            let pendingCount = 0; let historyCount = 0;
-
-            data.forEach(item => {
-                if(item.status === 'Pending' || item.status === 'Returned') {
-                    pendingCount++;
-                    let actionButtons = '';
-                    if(item.status === 'Returned') {
-                        actionButtons = `<span class="badge bg-light text-info border border-info w-100 p-2 rounded-pill"><i class="fas fa-hourglass-half"></i> รอพนักงานแก้ไข</span>`;
-                    } else {
-                        actionButtons = `
-                            <div class="btn-group w-100 shadow-sm rounded-pill overflow-hidden">
-                                <button class="btn btn-sm btn-success py-2" onclick="processApprove('${item.request_id}', 'Approved')"><i class="fas fa-check"></i> อนุมัติ</button>
-                                <button class="btn btn-sm btn-danger py-2" onclick="processApprove('${item.request_id}', 'Rejected')"><i class="fas fa-times"></i> ปฏิเสธ</button>
-                                <button class="btn btn-sm btn-info text-dark py-2" onclick="processReturn('${item.request_id}')"><i class="fas fa-undo"></i> คืนกลับ</button>
-                            </div>
-                        `;
-                    }
-
-                    let deleteBtn = currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 mt-2" onclick="promptDeleteByManager('${item.request_id}')"><i class="fas fa-trash"></i> แอดมินลบทิ้ง</button>` : '';
-
-                    pendingBody.innerHTML += `
-                        <tr>
-                            <td class="px-3"><b class="text-primary">${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td>
-                            <td class="text-secondary small fw-bold">${item.dates.join('<br>')}</td>
-                            <td class="text-muted">${item.reason}</td>
-                            <td class="text-center px-3">${actionButtons}${deleteBtn}</td>
-                        </tr>
-                    `;
-                } else {
-                    historyCount++;
-                    let statusLabel = item.status;
-                    if(item.status === "Approved") statusLabel = "อนุมัติแล้ว";
-                    if(item.status === "Rejected") statusLabel = "ไม่อนุมัติ";
-                    const badgeClass = item.status === 'Approved' ? 'bg-success' : 'bg-danger';
-                    
-                    let deleteBtn = currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="promptDeleteByManager('${item.request_id}')"><i class="fas fa-trash"></i> ลบทิ้ง</button>` : `<span class="text-muted small"><i class="fas fa-lock"></i> ปิดจ๊อบ</span>`;
-                    
-                    historyBody.innerHTML += `
-                        <tr>
-                            <td class="px-3"><b class="text-primary">${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td>
-                            <td class="small fw-bold text-secondary">${item.dates.join('<br>')}</td>
-                            <td class="text-center"><span class="badge ${badgeClass}">${statusLabel}</span></td>
-                            <td class="text-center px-3">${deleteBtn}</td>
-                        </tr>
-                    `;
-                }
-            });
-
-            if(pendingCount === 0) pendingBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">🎉 เย้! ไม่มีคำขอค้างพิจารณาค่ะ</td></tr>`;
-            if(historyCount === 0) historyBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">ไม่พบประวัติการทำรายการค่ะ</td></tr>`;
-        }
-
-        async function processApprove(reqId, statusAction, comment = '') {
-            document.getElementById('loading-overlay').style.display = 'flex';
-            try {
-                const res = await callGAS_JSONP('processApproval', { request_id: reqId, status: statusAction, manager_email: currentUser.email, comment: comment });
-                if(res.status === 'success') { Swal.fire({title: 'สำเร็จ! ✨', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
-                else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
-            } catch(e) { Swal.fire('Error', e.message, 'error'); }
-            finally { document.getElementById('loading-overlay').style.display = 'none'; }
-        }
-
-        async function processReturn(reqId) {
-            const { value: text } = await Swal.fire({
-                title: 'ส่งกลับให้พนักงานแก้ไข',
-                input: 'textarea',
-                inputLabel: 'คอมเมนต์บอกพนักงานสักนิดว่าต้องแก้อะไร 💬',
-                inputPlaceholder: 'พิมพ์เหตุผลที่นี่...',
-                showCancelButton: true,
-                confirmButtonColor: '#0dcaf0',
-                cancelButtonColor: '#e9ecef',
-                confirmButtonText: '<span class="text-dark fw-bold">ส่งกลับ</span>',
-                cancelButtonText: '<span class="text-dark">ยกเลิก</span>'
-            });
-            if (text) {
-                processApprove(reqId, 'Returned', text);
-            }
-        }
-
-        function promptDeleteByManager(reqId) {
-            Swal.fire({
-                title: 'แอดมินยืนยันลบคำขอถาวร? 🗑️', text: "ประวัติการลาของพนักงานนี้จะหายไปจากระบบและไม่สามารถกู้คืนได้นะคะ", icon: 'warning',
-                showCancelButton: true, confirmButtonColor: '#ff6b6b', cancelButtonColor: '#e9ecef', 
-                confirmButtonText: 'ใช่, ลบข้อมูลทิ้ง!', cancelButtonText: '<span class="text-dark">ยกเลิก</span>'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    document.getElementById('loading-overlay').style.display = 'flex';
-                    try {
-                        const res = await callGAS_JSONP('deleteRequest', { request_id: reqId, manager_email: currentUser.email });
-                        if(res.status === 'success') { Swal.fire({title: 'ลบสำเร็จ', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
-                        else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
-                    } catch(e) { Swal.fire('Error', e.message, 'error'); }
-                    finally { document.getElementById('loading-overlay').style.display = 'none'; }
-                }
-            });
         }
 
         /* --- REPORT LOGIC --- */
         async function loadReportData() {
             const monthInput = document.getElementById('report-month-picker').value;
             if(!monthInput) return;
-            
             document.getElementById('loading-overlay').style.display = 'flex';
             try {
                 const res = await callGAS_JSONP('getReport', { month: monthInput, manager_email: currentUser.email });
-                
                 if(res.status === 'success') {
                     renderReportTable(res.data, monthInput);
                     setupReportSignatures();
                 } else {
-                    console.log("Mocking Report Data (API error/not ready)");
-                    const mockData = generateMockReportData(monthInput);
-                    renderReportTable(mockData, monthInput);
-                    setupReportSignatures();
+                    Swal.fire({title: 'ไม่พบข้อมูล', text: res.message, icon: 'warning', confirmButtonColor: '#ff758c'});
                 }
             } catch (err) { 
-                console.log("Error loading Report Data, using Mock Data", err);
-                const mockData = generateMockReportData(monthInput);
-                renderReportTable(mockData, monthInput);
-                setupReportSignatures();
+                Swal.fire({title: 'เกิดข้อผิดพลาด', text: err.message, icon: 'error', confirmButtonColor: '#ff758c'});
             } finally { 
                 document.getElementById('loading-overlay').style.display = 'none'; 
             }
@@ -1157,13 +915,9 @@
 
         function setupReportSignatures() {
             document.getElementById('report-signature-section').style.display = 'flex';
-            
-            // ตั้งค่า วันที่ปัจจุบัน (Default)
             const todayStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
             document.getElementById('sig-manager-date').value = todayStr;
             document.getElementById('sig-staff-date').value = todayStr;
-            
-            // ตั้งค่า ผู้บังคับบัญชา หากมีสิทธิ์ (Default)
             if (currentUser && (currentUser.role === 'Manager' || currentUser.role === 'Admin')) {
                 document.getElementById('sig-manager-name').value = currentUser.name;
             }
@@ -1174,66 +928,35 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const img = document.getElementById(imgId);
-                    img.src = e.target.result;
-                    img.style.display = 'inline-block';
+                    img.src = e.target.result; img.style.display = 'inline-block';
                     document.getElementById(placeholderId).style.display = 'none';
                 }
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function generateMockReportData(yyyy_mm) {
-            return [
-                { name: "นางสาว ศศิวิมล วณีสอน", position: "ลก.", wfh_dates: ["09","16","17","23"] },
-                { name: "นาง กฤษณา เป้ารุ่ง", position: "รก.", wfh_dates: ["01","03","07","08","10","17","22","24","29"] },
-                { name: "นางสาว กรกช สุขช่วย", position: "รก", wfh_dates: ["01","03","07","08","10","17","22","27","28"] },
-                { name: "นางสาว อรุณศรี ขันเงิน", position: "นจน. 10", wfh_dates: ["01","03","07","10"] },
-                { name: "นาย สามิต กัลยาณมิตร", position: "นจน. 9", wfh_dates: ["02","08","17","22","28","29"] },
-                { name: "นาย วรุตม์ วิเศษสิงห์", position: "นจน. 8", wfh_dates: ["01","03","07","10","22","24"] },
-            ];
-        }
-
         function renderReportTable(data, yyyy_mm) {
             reportDataStore = data;
             const container = document.getElementById('report-table-container');
             const [yearStr, monthStr] = yyyy_mm.split('-');
-            const year = parseInt(yearStr);
-            const month = parseInt(monthStr);
-            
+            const year = parseInt(yearStr); const month = parseInt(monthStr);
             const daysInMonth = new Date(year, month, 0).getDate();
             
-            let html = `
-                <table class="table report-table" id="export-report-table">
-                    <thead>
-                        <tr>
-                            <th>ลำดับที่</th>
-                            <th>ชื่อ - นามสกุล</th>
-                            <th>ตำแหน่ง</th>
-            `;
-            for(let i=1; i<=daysInMonth; i++) {
-                html += `<th>${i}</th>`;
-            }
+            let html = `<table class="table report-table" id="export-report-table"><thead><tr><th>ลำดับที่</th><th>ชื่อ - นามสกุล</th><th>ตำแหน่ง</th>`;
+            for(let i=1; i<=daysInMonth; i++) { html += `<th>${i}</th>`; }
             html += `</tr></thead><tbody>`;
             
             let totalEmp = data.length;
             let wfhCountPerDay = Array(daysInMonth + 1).fill(0);
 
             data.forEach((emp, index) => {
-                html += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td class="text-start">${emp.name}</td>
-                        <td>${emp.position || ''}</td>
-                `;
-                
+                html += `<tr><td>${index + 1}</td><td class="text-start">${emp.name}</td><td>${emp.position || ''}</td>`;
                 for(let i=1; i<=daysInMonth; i++) {
                     const dayStr = String(i).padStart(2, '0');
                     if(emp.wfh_dates && emp.wfh_dates.includes(dayStr)) {
                         html += `<td><i class="fas fa-check day-check"></i></td>`;
                         wfhCountPerDay[i]++;
-                    } else {
-                        html += `<td></td>`;
-                    }
+                    } else { html += `<td></td>`; }
                 }
                 html += `</tr>`;
             });
@@ -1241,28 +964,21 @@
             html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่มาปฏิบัติงาน (ราย)</td>`;
             for(let i=1; i<=daysInMonth; i++) html += `<td>${totalEmp}</td>`;
             html += `</tr>`;
-
             html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่ Work from Home (ราย)</td>`;
             for(let i=1; i<=daysInMonth; i++) html += `<td>${wfhCountPerDay[i]}</td>`;
             html += `</tr>`;
-
             html += `<tr class="summary-row"><td colspan="3" class="text-end">พนักงานที่ Work from Home (ร้อยละ)</td>`;
-            let sumPercentage = 0;
             for(let i=1; i<=daysInMonth; i++) {
                 let percent = totalEmp > 0 ? Math.round((wfhCountPerDay[i] / totalEmp) * 100) : 0;
                 html += `<td>${percent}%</td>`;
-                sumPercentage += percent;
             }
-            html += `</tr>`;
-
-            html += `</tbody></table>`;
+            html += `</tr></tbody></table>`;
             container.innerHTML = html;
         }
 
         function exportToExcel() {
             const table = document.getElementById("export-report-table");
             if(!table) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
-            
             const wb = XLSX.utils.table_to_book(table, {sheet: "WFH Report"});
             const monthInput = document.getElementById('report-month-picker').value;
             XLSX.writeFile(wb, `WFH_Report_${monthInput}.xlsx`);
@@ -1271,19 +987,22 @@
         function exportToPDF() {
             const tableContainer = document.getElementById("report-table-container");
             const sigContainer = document.getElementById("report-signature-section");
-
             if(!tableContainer.innerHTML.trim()) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
             
             document.getElementById('loading-overlay').style.display = 'flex';
             
-            const pdfWrapper = document.createElement('div');
+            const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
+            // บังคับความกว้าง PDF wrapper ให้รองรับตาราง 31 คอลัมน์ และตั้งค่า position ซ่อนไว้เพื่อแคปเจอร์
+            pdfWrapper.style.width = '1200px'; 
+            pdfWrapper.style.position = 'absolute';
+            pdfWrapper.style.top = '-9999px';
             
             const monthInput = document.getElementById('report-month-picker').value;
             const [y, m] = monthInput.split('-');
             const title = document.createElement('h3');
             title.innerHTML = `ตารางกำหนดการปฏิบัติงาน (กรณี WFH) <br><small>ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</small>`;
-            title.style.textAlign = 'center';
+            title.style.textAlign = 'center'; 
             title.style.marginBottom = '20px';
             
             const clonedTable = tableContainer.cloneNode(true);
@@ -1291,27 +1010,27 @@
             clonedTable.style.overflow = 'visible';
             
             const clonedSig = sigContainer.cloneNode(true);
-            clonedSig.style.pageBreakInside = 'avoid'; 
+            clonedSig.style.pageBreakInside = 'avoid';
             
             const origInputs = sigContainer.querySelectorAll('input[type="text"]');
             const cloneInputs = clonedSig.querySelectorAll('input[type="text"]');
             origInputs.forEach((input, idx) => {
                 const span = document.createElement('span');
                 span.innerText = input.value || '......................................';
-                span.style.borderBottom = '1px dotted #000';
+                span.style.borderBottom = '1px dotted #000'; 
                 span.style.padding = '0 10px';
-                span.style.display = 'inline-block';
-                span.style.minWidth = input.style.width || '150px';
+                span.style.display = 'inline-block'; 
+                span.style.minWidth = input.style.width || '150px'; 
                 span.style.fontWeight = 'bold';
                 cloneInputs[idx].parentNode.replaceChild(span, cloneInputs[idx]);
             });
 
             const cloneUploads = clonedSig.querySelectorAll('.signature-upload');
-            cloneUploads.forEach(u => {
-                u.style.border = 'none';
-                u.style.background = 'transparent';
-                u.style.height = 'auto';
-                u.style.minHeight = '70px';
+            cloneUploads.forEach(u => { 
+                u.style.border = 'none'; 
+                u.style.background = 'transparent'; 
+                u.style.height = 'auto'; 
+                u.style.minHeight = '70px'; 
             });
             const clonePlaceholders = clonedSig.querySelectorAll('span[id$="-placeholder"]');
             clonePlaceholders.forEach(p => p.style.display = 'none');
@@ -1320,27 +1039,136 @@
             const cloneImgs = clonedSig.querySelectorAll('img');
             origImgs.forEach((img, idx) => {
                 cloneImgs[idx].src = img.src;
-                if(img.src) {
-                    cloneImgs[idx].style.display = 'inline-block';
-                }
+                if(img.src) cloneImgs[idx].style.display = 'inline-block';
             });
             
-            pdfWrapper.appendChild(title);
-            pdfWrapper.appendChild(clonedTable);
+            pdfWrapper.appendChild(title); 
+            pdfWrapper.appendChild(clonedTable); 
             pdfWrapper.appendChild(clonedSig);
             document.body.appendChild(pdfWrapper);
 
             const opt = {
-                margin:       [0.3, 0.3, 0.3, 0.3],
-                filename:     `WFH_Report_${monthInput}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+                margin: [0.3, 0.3, 0.3, 0.3], 
+                filename: `WFH_Report_${monthInput}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1200 }, // เพิ่ม windowWidth บังคับการแคปไม่ให้ขาด
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
             html2pdf().set(opt).from(pdfWrapper).save().then(() => {
                 document.body.removeChild(pdfWrapper);
                 document.getElementById('loading-overlay').style.display = 'none';
+            });
+        }
+
+        /* --- API HELPER FUNCTIONS --- */
+        function createProcessFlowHTML(status) {
+            let step3Class = '', step3Icon = '<i class="fas fa-ellipsis-h"></i>', step3Label = 'รอพิจารณา';
+            if(status === 'Approved') { step3Class = 'step-approved'; step3Icon = '<i class="fas fa-check"></i>'; step3Label = 'อนุมัติแล้ว'; } 
+            else if (status === 'Rejected') { step3Class = 'step-rejected'; step3Icon = '<i class="fas fa-times"></i>'; step3Label = 'ไม่อนุมัติ'; } 
+            else if (status === 'Returned') { step3Class = 'step-returned'; step3Icon = '<i class="fas fa-undo"></i>'; step3Label = 'ส่งกลับแก้ไข'; }
+            return `
+            <div class="process-flow">
+                <div class="flow-step step-submit"><div class="flow-icon"><i class="fas fa-paper-plane"></i></div><div class="flow-label">ส่งแล้ว</div></div>
+                <div class="flow-step ${status === 'Pending' ? 'step-pending' : 'step-submit'}"><div class="flow-icon"><i class="fas fa-heart"></i></div><div class="flow-label">รอหัวหน้า</div></div>
+                <div class="flow-step ${step3Class}"><div class="flow-icon">${step3Icon}</div><div class="flow-label">${step3Label}</div></div>
+            </div>`;
+        }
+
+        function renderHistoryTable(data) {
+            const tbody = document.getElementById('history-table-body'); tbody.innerHTML = '';
+            if(!data || data.length === 0) return tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">ยังไม่มีประวัติการทำรายการค่ะ 😊</td></tr>`;
+            data.forEach(item => {
+                let actionBtns = `<span class="text-muted small"><i class="fas fa-lock"></i> ล็อคข้อมูล</span>`;
+                if(item.status === 'Pending' || item.status === 'Returned') {
+                    let btnText = item.status === 'Returned' ? 'แก้ไขส่งใหม่' : 'แก้ไขเหตุผล';
+                    let btnColor = item.status === 'Returned' ? 'btn-info text-dark' : 'btn-outline-warning text-dark';
+                    let escapedComment = item.manager_comment ? item.manager_comment.replace(/'/g, "\\'") : '';
+                    actionBtns = `<button class="btn btn-sm ${btnColor} w-100 fw-bold rounded-pill shadow-sm" onclick="promptEdit('${item.request_id}', '${item.reason}', '${escapedComment}')"><i class="fas fa-magic"></i> ${btnText}</button>`;
+                }
+                let commentHtml = '';
+                if(item.status === 'Returned' && item.manager_comment) {
+                    commentHtml = `<div class="alert alert-light border border-info p-2 mt-2 mb-0 small" style="border-radius:10px;"><i class="fas fa-comment-dots text-info"></i> <b>หัวหน้าคอมเมนต์:</b> <span class="text-secondary">${item.manager_comment}</span></div>`;
+                }
+                let prefixName = currentUser.role === 'Admin' ? `<b class="text-primary">${item.employee_name}</b><br>` : '';
+                tbody.innerHTML += `<tr><td class="small px-3">${item.dates.join('<br>')}</td><td>${prefixName}<span class="text-secondary">${item.reason}</span>${commentHtml}</td><td class="text-center">${createProcessFlowHTML(item.status)}</td><td class="text-center px-3">${actionBtns}</td></tr>`;
+            });
+        }
+
+        function promptEdit(reqId, oldReason, managerComment) {
+            document.getElementById('edit-req-id').value = reqId; document.getElementById('edit-reason').value = oldReason;
+            const commentDiv = document.getElementById('edit-manager-comment');
+            if(managerComment) { commentDiv.innerHTML = `<i class="fas fa-comment-dots"></i> <strong>หัวหน้าให้แก้ไข:</strong> ${managerComment}`; commentDiv.style.display = 'block'; } 
+            else { commentDiv.style.display = 'none'; }
+            editModal.show();
+        }
+
+        async function saveEdit() {
+            const reqId = document.getElementById('edit-req-id').value; const newReason = document.getElementById('edit-reason').value.trim();
+            if(!newReason) return Swal.fire({title:'เตือนนิดนึง', text:'อย่าลืมระบุเหตุผลใหม่นะคะ', icon:'warning', confirmButtonColor: '#ff758c'});
+            editModal.hide(); document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const res = await callGAS_JSONP('editRequest', { payload: JSON.stringify({request_id: reqId, new_reason: newReason}) });
+                if(res.status === 'success') { Swal.fire({title: 'ส่งใหม่สำเร็จ! ✨', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
+                else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
+            } catch(e) { Swal.fire('Error', e.message, 'error'); } finally { document.getElementById('loading-overlay').style.display = 'none'; }
+        }
+
+        function renderApprovalTable(data) {
+            const pendingBody = document.getElementById('approval-pending-body'); const historyBody = document.getElementById('approval-history-body');
+            pendingBody.innerHTML = ''; historyBody.innerHTML = ''; let pendingCount = 0; let historyCount = 0;
+            
+            if(!data) data = [];
+
+            data.forEach(item => {
+                if(item.status === 'Pending' || item.status === 'Returned') {
+                    pendingCount++; let actionButtons = '';
+                    if(item.status === 'Returned') { actionButtons = `<span class="badge bg-light text-info border border-info w-100 p-2 rounded-pill"><i class="fas fa-hourglass-half"></i> รอพนักงานแก้ไข</span>`; } 
+                    else { actionButtons = `<div class="btn-group w-100 shadow-sm rounded-pill overflow-hidden"><button class="btn btn-sm btn-success py-2" onclick="processApprove('${item.request_id}', 'Approved')"><i class="fas fa-check"></i> อนุมัติ</button><button class="btn btn-sm btn-danger py-2" onclick="processApprove('${item.request_id}', 'Rejected')"><i class="fas fa-times"></i> ปฏิเสธ</button><button class="btn btn-sm btn-info text-dark py-2" onclick="processReturn('${item.request_id}')"><i class="fas fa-undo"></i> คืนกลับ</button></div>`; }
+                    let deleteBtn = currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 mt-2" onclick="promptDeleteByManager('${item.request_id}')"><i class="fas fa-trash"></i> แอดมินลบทิ้ง</button>` : '';
+                    pendingBody.innerHTML += `<tr><td class="px-3"><b class="text-primary">${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td><td class="text-secondary small fw-bold">${item.dates.join('<br>')}</td><td class="text-muted">${item.reason}</td><td class="text-center px-3">${actionButtons}${deleteBtn}</td></tr>`;
+                } else {
+                    historyCount++;
+                    let statusLabel = item.status === "Approved" ? "อนุมัติแล้ว" : "ไม่อนุมัติ";
+                    const badgeClass = item.status === 'Approved' ? 'bg-success' : 'bg-danger';
+                    let deleteBtn = currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="promptDeleteByManager('${item.request_id}')"><i class="fas fa-trash"></i> ลบทิ้ง</button>` : `<span class="text-muted small"><i class="fas fa-lock"></i> ปิดจ๊อบ</span>`;
+                    historyBody.innerHTML += `<tr><td class="px-3"><b class="text-primary">${item.name}</b><br><small class="text-muted">ID: ${item.employee_id}</small></td><td class="small fw-bold text-secondary">${item.dates.join('<br>')}</td><td class="text-center"><span class="badge ${badgeClass}">${statusLabel}</span></td><td class="text-center px-3">${deleteBtn}</td></tr>`;
+                }
+            });
+            if(pendingCount === 0) pendingBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">🎉 เย้! ไม่มีคำขอค้างพิจารณาค่ะ</td></tr>`;
+            if(historyCount === 0) historyBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">ไม่พบประวัติการทำรายการค่ะ</td></tr>`;
+        }
+
+        async function processApprove(reqId, statusAction, comment = '') {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const res = await callGAS_JSONP('processApproval', { request_id: reqId, status: statusAction, manager_email: currentUser.email, comment: comment });
+                if(res.status === 'success') { Swal.fire({title: 'สำเร็จ! ✨', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
+                else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
+            } catch(e) { Swal.fire('Error', e.message, 'error'); } finally { document.getElementById('loading-overlay').style.display = 'none'; }
+        }
+
+        async function processReturn(reqId) {
+            const { value: text } = await Swal.fire({
+                title: 'ส่งกลับให้พนักงานแก้ไข', input: 'textarea', inputLabel: 'คอมเมนต์บอกพนักงานสักนิดว่าต้องแก้อะไร 💬', inputPlaceholder: 'พิมพ์เหตุผลที่นี่...',
+                showCancelButton: true, confirmButtonColor: '#0dcaf0', cancelButtonColor: '#e9ecef', confirmButtonText: '<span class="text-dark fw-bold">ส่งกลับ</span>', cancelButtonText: '<span class="text-dark">ยกเลิก</span>'
+            });
+            if (text) { processApprove(reqId, 'Returned', text); }
+        }
+
+        function promptDeleteByManager(reqId) {
+            Swal.fire({
+                title: 'แอดมินยืนยันลบคำขอถาวร? 🗑️', text: "ประวัติการลาของพนักงานนี้จะหายไปจากระบบและไม่สามารถกู้คืนได้นะคะ", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#ff6b6b', cancelButtonColor: '#e9ecef', confirmButtonText: 'ใช่, ลบข้อมูลทิ้ง!', cancelButtonText: '<span class="text-dark">ยกเลิก</span>'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('loading-overlay').style.display = 'flex';
+                    try {
+                        const res = await callGAS_JSONP('deleteRequest', { request_id: reqId, manager_email: currentUser.email });
+                        if(res.status === 'success') { Swal.fire({title: 'ลบสำเร็จ', text: res.message, icon: 'success', confirmButtonColor: '#ff758c'}); reloadData(); }
+                        else Swal.fire({title: 'ผิดพลาด', text: res.message, icon: 'error', confirmButtonColor: '#ff758c'});
+                    } catch(e) { Swal.fire('Error', e.message, 'error'); } finally { document.getElementById('loading-overlay').style.display = 'none'; }
+                }
             });
         }
     </script>
