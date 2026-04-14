@@ -298,7 +298,7 @@
             padding: 20px;
             color: black;
             font-family: sans-serif;
-            width: 1200px; /* บังคับความกว้างให้ PDF แคปได้ครบ 31 วันโดยไม่โดนตัด */
+            width: 1400px; /* บังคับความกว้างให้ PDF แคปได้ครบ 31 วันโดยไม่โดนตัด */
         }
         #pdf-export-wrapper .report-table th, 
         #pdf-export-wrapper .report-table td { 
@@ -550,7 +550,6 @@
                                         
                                         <div class="mt-2">( <input type="text" id="sig-manager-name" class="signature-input" placeholder="พิมพ์ชื่อผู้บังคับบัญชา"> )</div>
                                         
-                                        <!-- แก้ไขให้สามารถกรอกตำแหน่งเองได้ -->
                                         <div class="mt-1 d-flex align-items-center justify-content-center text-muted small fw-bold">
                                             ตำแหน่ง : <input type="text" id="sig-manager-position" class="signature-input ms-1" style="width: 140px; font-size: 0.85rem;" value="ผู้บังคับบัญชา" placeholder="พิมพ์ตำแหน่ง">
                                         </div>
@@ -568,7 +567,6 @@
                                         
                                         <div class="mt-2">( <input type="text" id="sig-staff-name" class="signature-input" placeholder="พิมพ์ชื่อผู้จัดทำ"> )</div>
                                         
-                                        <!-- แก้ไขให้สามารถกรอกตำแหน่งเองได้ -->
                                         <div class="mt-1 d-flex align-items-center justify-content-center text-muted small fw-bold">
                                             ตำแหน่ง : <input type="text" id="sig-staff-position" class="signature-input ms-1" style="width: 140px; font-size: 0.85rem;" value="ผู้ปฏิบัติงาน" placeholder="พิมพ์ตำแหน่ง">
                                         </div>
@@ -994,7 +992,7 @@
             const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
             // บังคับความกว้าง PDF wrapper ให้รองรับตาราง 31 คอลัมน์ และตั้งค่า position ซ่อนไว้เพื่อแคปเจอร์
-            pdfWrapper.style.width = '1200px'; 
+            pdfWrapper.style.width = '1400px'; 
             pdfWrapper.style.position = 'absolute';
             pdfWrapper.style.top = '-9999px';
             
@@ -1017,7 +1015,14 @@
             origInputs.forEach((input, idx) => {
                 const span = document.createElement('span');
                 span.innerText = input.value || '......................................';
-                span.style.borderBottom = '1px dotted #000'; 
+                
+                // ถอดเส้นประออกถ้าเป็นช่องตำแหน่ง เพื่อให้ดูเนียนตาขึ้นใน PDF
+                if(input.id.includes('position')) {
+                    span.style.borderBottom = 'none';
+                } else {
+                    span.style.borderBottom = '1px dotted #000'; 
+                }
+                
                 span.style.padding = '0 10px';
                 span.style.display = 'inline-block'; 
                 span.style.minWidth = input.style.width || '150px'; 
@@ -1051,7 +1056,7 @@
                 margin: [0.3, 0.3, 0.3, 0.3], 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1200 }, // เพิ่ม windowWidth บังคับการแคปไม่ให้ขาด
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400 }, // เพิ่ม windowWidth บังคับการแคปไม่ให้ขาด
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
