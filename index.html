@@ -300,7 +300,6 @@
             font-family: sans-serif;
             width: 1400px;
         }
-        /* บังคับปลดล็อค position: sticky ออกตอน Export PDF เพราะ html2canvas แคปหน้าจอได้แต่หน้าขาวๆ หากติด Sticky */
         #pdf-export-wrapper .report-table th, 
         #pdf-export-wrapper .report-table td { 
             position: static !important; 
@@ -529,7 +528,9 @@
                                 <div class="d-flex gap-2">
                                     <input type="month" id="report-month-picker" class="form-control" style="width: auto;" onchange="loadReportData()">
                                     <button class="btn btn-success rounded-pill px-4" onclick="exportToExcel()"><i class="fas fa-file-excel me-2"></i> Excel</button>
-                                    <button class="btn btn-danger rounded-pill px-4" onclick="exportToPDF()"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                                    
+                                    <!-- เปลี่ยนเป็นการเรียกใช้ฟังก์ชัน previewPDF แทนการ Download ทันที -->
+                                    <button class="btn btn-danger rounded-pill px-4" onclick="previewPDF()"><i class="fas fa-file-pdf me-2"></i> PDF</button>
                                 </div>
                             </div>
                             
@@ -951,7 +952,7 @@
                 for(let i=1; i<=daysInMonth; i++) {
                     const dayStr = String(i).padStart(2, '0');
                     if(emp.wfh_dates && emp.wfh_dates.includes(dayStr)) {
-                        // แก้ปัญหา Excel ไม่แสดงติ๊กถูก โดยใช้เครื่องหมาย Unicode แทน Icon
+                        // ใช้เครื่องหมาย Unicode ✓ แทน Icon เพื่อให้ติดใน Excel และ PDF ทุกเครื่อง
                         html += `<td style="color: #20c997; font-weight: bold; font-size: 1.1rem;">&#10003;</td>`;
                         wfhCountPerDay[i]++;
                     } else { html += `<td></td>`; }
@@ -959,7 +960,7 @@
                 html += `</tr>`;
             });
 
-            // จำนวนพนักงานที่มาปฏิบัติงาน = จำนวนพนักงานทั้งหมด - จำนวนพนักงานที่ WFH ในวันนั้น
+            // แก้ไข: จำนวนพนักงานที่มาปฏิบัติงาน = จำนวนพนักงานทั้งหมด ลบด้วย จำนวนพนักงานที่ WFH ในวันนั้น
             html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่มาปฏิบัติงาน (ราย)</td>`;
             for(let i=1; i<=daysInMonth; i++) html += `<td>${totalEmp - wfhCountPerDay[i]}</td>`;
             html += `</tr>`;
@@ -977,28 +978,28 @@
             container.innerHTML = html;
         }
 
+        // เพิ่มระบบ Preview ของจริงให้ดูก่อนโหลด Excel
         function exportToExcel() {
             const table = document.getElementById("export-report-table");
             if(!table) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
             
-            // นำตารางปัจจุบันมาทำภาพพรีวิวจำลอง (ลบ style บางส่วนไม่ให้ขัดกับ Swal)
             const clonedTable = table.cloneNode(true);
             clonedTable.classList.remove('report-table');
             clonedTable.style.width = '100%';
             const allCells = clonedTable.querySelectorAll('th, td');
             allCells.forEach(c => { c.style.position = 'static'; c.style.fontSize = '12px'; c.style.padding = '4px'; });
 
-            const previewHtml = `<div style="max-height: 50vh; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: white;">${clonedTable.outerHTML}</div>`;
+            const previewHtml = `<div style="max-height: 50vh; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: white; text-align: left;">${clonedTable.outerHTML}</div>`;
             
             Swal.fire({
                 title: 'พรีวิวข้อมูล Excel',
                 html: previewHtml,
-                width: '90%',
+                width: '95%',
                 showCancelButton: true,
                 confirmButtonColor: '#20c997',
-                cancelButtonColor: '#ff758c',
+                cancelButtonColor: '#6c757d',
                 confirmButtonText: '<i class="fas fa-file-excel"></i> ยืนยันดาวน์โหลด Excel',
-                cancelButtonText: 'ปิดพรีวิว'
+                cancelButtonText: 'ปิด'
             }).then((result) => {
                 if (result.isConfirmed) {
                     const wb = XLSX.utils.table_to_book(table, {sheet: "WFH Report"});
@@ -1008,30 +1009,16 @@
             });
         }
 
-        function exportToPDF() {
+        // เพิ่มระบบ Preview สร้างภาพ PDF ให้ดูจริงๆ ใน Modal (ไม่ใช่ iFrame)
+        function previewPDF() {
             const tableContainer = document.getElementById("report-table-container");
             const sigContainer = document.getElementById("report-signature-section");
             if(!tableContainer.innerHTML.trim()) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
             
-            document.getElementById('loading-overlay').style.display = 'flex';
-            window.scrollTo(0, 0); // เลื่อนขึ้นบนสุดป้องกัน html2canvas เรนเดอร์ตำแหน่งเพี้ยน
-            
-            const pdfWrapper = document.createElement('div'); 
-            pdfWrapper.id = 'pdf-export-wrapper';
-            pdfWrapper.style.width = '1400px'; 
-            pdfWrapper.style.position = 'absolute';
-            pdfWrapper.style.top = '0';
-            pdfWrapper.style.left = '0';
-            pdfWrapper.style.zIndex = '-1'; // เอาไว้หลังสุดไม่บังตา แต่ html2canvas มองเห็น
-            pdfWrapper.style.backgroundColor = '#ffffff';
-            
             const monthInput = document.getElementById('report-month-picker').value;
             const [y, m] = monthInput.split('-');
-            const title = document.createElement('h3');
-            title.innerHTML = `ตารางกำหนดการปฏิบัติงาน (กรณี WFH) <br><small>ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</small>`;
-            title.style.textAlign = 'center'; 
-            title.style.marginBottom = '20px';
-            
+            const titleHtml = `<h4 style="text-align: center; margin-bottom: 15px; color: #333;">ตารางกำหนดการปฏิบัติงาน (กรณี WFH) <br><small>ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</small></h4>`;
+
             const clonedTable = tableContainer.cloneNode(true);
             clonedTable.style.maxHeight = 'none'; 
             clonedTable.style.overflow = 'visible';
@@ -1039,12 +1026,18 @@
             clonedTable.style.boxShadow = 'none';
             
             const allCells = clonedTable.querySelectorAll('th, td');
-            allCells.forEach(cell => { cell.style.position = 'static'; });
+            allCells.forEach(cell => { 
+                cell.style.position = 'static'; 
+                cell.style.fontSize = '12px';
+                cell.style.padding = '4px 6px';
+            });
             const tbl = clonedTable.querySelector('table');
             if(tbl) { tbl.style.width = '100%'; tbl.style.minWidth = '100%'; }
             
             const clonedSig = sigContainer.cloneNode(true);
-            clonedSig.style.pageBreakInside = 'avoid';
+            clonedSig.style.display = 'flex';
+            clonedSig.style.marginTop = '20px';
+            clonedSig.style.paddingTop = '20px';
             
             const origInputs = sigContainer.querySelectorAll('input[type="text"]');
             const cloneInputs = clonedSig.querySelectorAll('input[type="text"]');
@@ -1070,45 +1063,60 @@
                 if(img.src) cloneImgs[idx].style.display = 'inline-block';
             });
             
-            pdfWrapper.appendChild(title); 
-            pdfWrapper.appendChild(clonedTable); 
-            pdfWrapper.appendChild(clonedSig);
+            const previewHtml = `<div style="max-height: 65vh; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: white; padding: 20px; color: black; text-align: left;">
+                ${titleHtml}
+                ${clonedTable.outerHTML}
+                ${clonedSig.outerHTML}
+            </div>`;
+
+            Swal.fire({
+                title: 'พรีวิวเอกสาร PDF',
+                html: previewHtml,
+                width: '95%',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-file-pdf"></i> ยืนยันดาวน์โหลด PDF',
+                cancelButtonText: 'ปิด'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    generateAndDownloadPDF(titleHtml, clonedTable.outerHTML, clonedSig.outerHTML, monthInput);
+                }
+            });
+        }
+
+        // ระบบแปลง PDF โดยไม่ต้องพึ่ง iframe ป้องกันหน้าเว็บขาว 100%
+        function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            const pdfWrapper = document.createElement('div'); 
+            pdfWrapper.id = 'pdf-export-wrapper';
+            pdfWrapper.style.width = '1400px'; 
+            pdfWrapper.style.position = 'absolute';
+            pdfWrapper.style.top = '-10000px';
+            pdfWrapper.style.left = '0';
+            pdfWrapper.style.backgroundColor = '#ffffff';
+            pdfWrapper.style.padding = '20px';
+            pdfWrapper.style.color = 'black';
+            
+            pdfWrapper.innerHTML = titleHtml + tableHtml + sigHtml;
             document.body.appendChild(pdfWrapper);
 
             const opt = {
                 margin: [0.3, 0.3, 0.3, 0.3], 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400, scrollY: 0, x: 0, y: 0 }, 
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400 }, 
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
-            // ดึงไฟล์ PDF เป็น Blob URL และแสดงให้ผู้ใช้ดูก่อนกดโหลด
-            html2pdf().set(opt).from(pdfWrapper).output('bloburl').then(function(pdfUrl) {
+            html2pdf().set(opt).from(pdfWrapper).save().then(() => {
+                document.body.removeChild(pdfWrapper);
                 document.getElementById('loading-overlay').style.display = 'none';
-                
-                Swal.fire({
-                    title: 'พรีวิวเอกสาร PDF',
-                    html: `<iframe src="${pdfUrl}#toolbar=0&navpanes=0" style="width: 100%; height: 60vh; border: 1px solid #ddd; border-radius: 8px; background: #f8f9fa;"></iframe>`,
-                    width: '85%',
-                    showCancelButton: true,
-                    confirmButtonColor: '#20c997',
-                    cancelButtonColor: '#ff758c',
-                    confirmButtonText: '<i class="fas fa-download"></i> ยืนยันดาวน์โหลด PDF',
-                    cancelButtonText: 'ปิดพรีวิว'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const a = document.createElement('a');
-                        a.href = pdfUrl;
-                        a.download = opt.filename;
-                        a.click();
-                    }
-                    document.body.removeChild(pdfWrapper);
-                });
             }).catch(err => {
                 document.body.removeChild(pdfWrapper);
                 document.getElementById('loading-overlay').style.display = 'none';
-                Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้างพรีวิว PDF: ' + err.message, 'error');
+                Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
             });
         }
 
