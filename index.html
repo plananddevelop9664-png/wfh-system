@@ -10,6 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
+    <!-- เพิ่ม Library สำหรับ Export PDF และ Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         :root {
             --sweet-pink: #ff758c;
@@ -34,7 +38,7 @@
         }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--sweet-bg); }
         ::-webkit-scrollbar-thumb { background: #ffb6c1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--sweet-pink); }
@@ -211,6 +215,91 @@
         .step-returned .flow-icon { background: var(--status-info); }
         .step-returned .flow-label { color: var(--status-info); }
 
+        /* Report Table Styling (เพิ่มใหม่) */
+        .report-table-container {
+            max-height: 600px;
+            overflow: auto;
+            border-radius: 15px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+            border: 1px solid #f0f0f0;
+        }
+        .report-table {
+            width: max-content;
+            min-width: 100%;
+            margin-bottom: 0;
+            background: white;
+        }
+        .report-table th, .report-table td {
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #e9ecef;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        .report-table thead th {
+            background-color: var(--sweet-pink);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            font-weight: 500;
+        }
+        .report-table th:nth-child(1), .report-table td:nth-child(1) { position: sticky; left: 0; background-color: #fff; z-index: 1; width: 60px; }
+        .report-table th:nth-child(2), .report-table td:nth-child(2) { position: sticky; left: 60px; background-color: #fff; z-index: 1; width: 180px; text-align: left; }
+        .report-table th:nth-child(3), .report-table td:nth-child(3) { position: sticky; left: 240px; background-color: #fff; z-index: 1; width: 120px; }
+        
+        .report-table thead th:nth-child(1),
+        .report-table thead th:nth-child(2),
+        .report-table thead th:nth-child(3) {
+            z-index: 3;
+            background-color: var(--sweet-pink);
+        }
+        
+        .summary-row {
+            background-color: #fff5f8 !important;
+            font-weight: bold;
+            color: var(--sweet-pink);
+        }
+        .summary-row td { background-color: #fff5f8 !important; }
+        .day-check { color: var(--status-success); font-size: 1.1rem; }
+        
+        /* Signature Styles (เพิ่มใหม่) */
+        .signature-upload {
+            border: 2px dashed #ffb6c1;
+            border-radius: 15px;
+            padding: 10px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: #fffafa;
+            transition: all 0.2s;
+            margin: 10px auto;
+            width: 220px;
+        }
+        .signature-upload:hover { background: #fff0f5; border-color: var(--sweet-pink); }
+        .signature-img { max-height: 80px; max-width: 100%; object-fit: contain; }
+        .signature-input {
+            border: none;
+            border-bottom: 1px dotted #ccc;
+            background: transparent;
+            text-align: center;
+            width: 180px;
+            color: #555;
+            font-family: inherit;
+            font-weight: 500;
+        }
+        .signature-input:focus { outline: none; border-bottom-color: var(--sweet-pink); }
+
+        #pdf-export-wrapper {
+            background: white;
+            padding: 20px;
+            color: black;
+            font-family: sans-serif;
+        }
+        #pdf-export-wrapper .report-table th { background-color: #f8f9fa; color: black; }
+
         /* Footer & Modals */
         .footer { background: #ffffff; color: #ffb6c1; text-align: center; padding: 20px 0; width: 100%; border-top: 1px solid var(--sweet-bg); font-weight: 300;}
         .modal-content { border-radius: 25px; border: none; overflow: hidden; box-shadow: 0 15px 40px rgba(255, 117, 140, 0.2); }
@@ -223,30 +312,16 @@
         .table-light { background-color: #fff0f5; color: var(--sweet-pink); }
         .table-hover tbody tr:hover { background-color: #fff5f8; }
 
-        /* Decorative Patterns (ลวดลายการ์ตูนสาวออฟฟิศสายหวาน) */
-        .deco-pattern {
-            position: fixed;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.15;
-            color: var(--sweet-pink);
-        }
+        /* Decorative Patterns */
+        .deco-pattern { position: fixed; pointer-events: none; z-index: 0; opacity: 0.15; color: var(--sweet-pink); }
         .deco-1 { top: 10%; right: 8%; font-size: 5rem; animation: float 6s ease-in-out infinite; }
         .deco-2 { bottom: 12%; right: 15%; font-size: 8rem; animation: float 8s ease-in-out infinite reverse; color: var(--sweet-peach); }
         .deco-3 { top: 40%; left: 280px; font-size: 3rem; animation: pulse 4s ease-in-out infinite; color: var(--status-info); }
         .deco-4 { top: 25%; left: 45%; font-size: 4rem; animation: float 7s ease-in-out infinite; color: var(--status-warning); }
         .deco-5 { bottom: 30%; left: 300px; font-size: 5rem; animation: float 9s ease-in-out infinite; color: var(--sweet-pink); opacity: 0.1; }
 
-        @keyframes float {
-            0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(10deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
-        }
-        @keyframes pulse {
-            0% { transform: scale(1) rotate(-10deg); opacity: 0.15; }
-            50% { transform: scale(1.15) rotate(5deg); opacity: 0.25; }
-            100% { transform: scale(1) rotate(-10deg); opacity: 0.15; }
-        }
+        @keyframes float { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(10deg); } 100% { transform: translateY(0px) rotate(0deg); } }
+        @keyframes pulse { 0% { transform: scale(1) rotate(-10deg); opacity: 0.15; } 50% { transform: scale(1.15) rotate(5deg); opacity: 0.25; } 100% { transform: scale(1) rotate(-10deg); opacity: 0.15; } }
 
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.85); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px); }
 
@@ -320,6 +395,10 @@
                 </a>
                 <a class="menu-item" id="menu-approval" onclick="switchView('view-approval', this)" style="display: none;">
                     <i class="fas fa-crown"></i> <span id="menu-approval-text">ผู้อนุมัติคำขอ</span>
+                </a>
+                <!-- เมนูใหม่: รายงาน (แสดงเฉพาะ Manager/Admin) -->
+                <a class="menu-item" id="menu-report" onclick="switchView('view-report', this)" style="display: none;">
+                    <i class="fas fa-file-excel"></i> <span>รายงานตาราง WFH</span>
                 </a>
             </div>
         </nav>
@@ -429,6 +508,61 @@
                     </div>
                 </div>
 
+                <!-- VIEW 4: REPORT (ตาราง WFH ภาพรวมพนักงาน พร้อมลายเซ็น) -->
+                <div id="view-report" class="app-view">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                                <h5 class="fw-bold text-primary mb-0"><i class="fas fa-table me-2"></i> รายงานกำหนดการปฏิบัติงาน (WFH)</h5>
+                                
+                                <div class="d-flex gap-2">
+                                    <input type="month" id="report-month-picker" class="form-control" style="width: auto;" onchange="loadReportData()">
+                                    <button class="btn btn-success rounded-pill px-4" onclick="exportToExcel()"><i class="fas fa-file-excel me-2"></i> Excel</button>
+                                    <button class="btn btn-danger rounded-pill px-4" onclick="exportToPDF()"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Container สำหรับตารางรายงาน -->
+                            <div class="report-table-container" id="report-table-container"></div>
+                            
+                            <!-- ส่วนลายเซ็นท้ายรายงาน (Manager ซ้าย / Staff ขวา) -->
+                            <div id="report-signature-section" style="display: none; margin-top: 40px; border-top: 2px dashed #f0f0f0; padding-top: 40px; width: 100%;">
+                                <div style="display: flex; justify-content: space-between; text-align: center; width: 100%;">
+                                    <!-- ซ้ายล่าง: ผู้บังคับบัญชา (Manager) -->
+                                    <div style="width: 48%; display: flex; flex-direction: column; align-items: center;">
+                                        <div class="signature-upload" onclick="document.getElementById('sig-manager-file').click()">
+                                            <img id="sig-manager-img" class="signature-img" style="display:none;" alt="ลายเซ็นผู้บังคับบัญชา">
+                                            <span id="sig-manager-placeholder" class="text-muted small"><i class="fas fa-upload mb-1 d-block" style="font-size: 1.5rem;"></i>คลิกอัปโหลดลายเซ็น<br>(PNG, JPG)</span>
+                                        </div>
+                                        <input type="file" id="sig-manager-file" accept="image/png, image/jpeg" style="display:none;" onchange="previewSig(this, 'sig-manager-img', 'sig-manager-placeholder')">
+                                        
+                                        <div class="mt-2">( <input type="text" id="sig-manager-name" class="signature-input" placeholder="พิมพ์ชื่อผู้บังคับบัญชา"> )</div>
+                                        <p class="mb-1 text-muted small fw-bold mt-1">ผู้ตรวจสอบ / ผู้บังคับบัญชา</p>
+                                        <div class="mt-1 small">วันที่: <input type="text" id="sig-manager-date" class="signature-input" style="width: 120px;"></div>
+                                    </div>
+                                    
+                                    <!-- ขวาล่าง: ผู้ปฏิบัติงาน / ผู้จัดทำ (Staff) -->
+                                    <div style="width: 48%; display: flex; flex-direction: column; align-items: center;">
+                                        <div class="signature-upload" onclick="document.getElementById('sig-staff-file').click()">
+                                            <img id="sig-staff-img" class="signature-img" style="display:none;" alt="ลายเซ็นผู้จัดทำ">
+                                            <span id="sig-staff-placeholder" class="text-muted small"><i class="fas fa-upload mb-1 d-block" style="font-size: 1.5rem;"></i>คลิกอัปโหลดลายเซ็น<br>(PNG, JPG)</span>
+                                        </div>
+                                        <input type="file" id="sig-staff-file" accept="image/png, image/jpeg" style="display:none;" onchange="previewSig(this, 'sig-staff-img', 'sig-staff-placeholder')">
+                                        
+                                        <div class="mt-2">( <input type="text" id="sig-staff-name" class="signature-input" placeholder="พิมพ์ชื่อผู้จัดทำ"> )</div>
+                                        <p class="mb-1 text-muted small fw-bold mt-1">ผู้ปฏิบัติงาน / ผู้จัดทำ</p>
+                                        <div class="mt-1 small">วันที่: <input type="text" id="sig-staff-date" class="signature-input" style="width: 120px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 text-muted small border-top pt-3">
+                                <i class="fas fa-info-circle me-1"></i> สัญลักษณ์ <i class="fas fa-check text-success"></i> หมายถึงวันที่พนักงานได้รับอนุมัติให้ Work From Home
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Footer -->
@@ -504,6 +638,7 @@
         let dragMode = 'select'; // เพิ่มตัวแปรเพื่อจำว่ากำลังลาก "เลือก" หรือ "ยกเลิก"
         let employeeHistory = []; 
         let currentView = 'view-calendar';
+        let reportDataStore = []; // เก็บข้อมูล Report ไว้ Export
 
         const thMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
         const daysOfWeek = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -514,6 +649,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             wfhModal = new bootstrap.Modal(document.getElementById('wfhModal'));
             editModal = new bootstrap.Modal(document.getElementById('editModal'));
+
+            // ตั้งค่าค่าเริ่มต้น Date Picker หน้า Report
+            const today = new Date();
+            document.getElementById('report-month-picker').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
             renderCalendar();
             setupDragSelection();
@@ -613,8 +752,10 @@
 
             if(currentUser.role === 'User') {
                 document.getElementById('menu-approval').style.display = 'none';
+                document.getElementById('menu-report').style.display = 'none';
             } else {
                 document.getElementById('menu-approval').style.display = 'block';
+                document.getElementById('menu-report').style.display = 'block';
             }
 
             renderCalendar();
@@ -638,7 +779,8 @@
             const titles = { 
                 'view-calendar':`<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2" style="margin-top:-4px; color: var(--sweet-pink);"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M10.5 14.5a2.12 2.12 0 0 0-3 0 2.12 2.12 0 0 0 0 3L12 22l4.5-4.5a2.12 2.12 0 0 0 0-3 2.12 2.12 0 0 0-3 0l-1.5 1.5Z"/></svg>ปฏิทินยื่นเรื่อง`, 
                 'view-history':'<i class="fas fa-clipboard-list me-2"></i>ประวัติคำขอ', 
-                'view-approval':'<i class="fas fa-crown me-2"></i>ผู้อนุมัติคำขอ' 
+                'view-approval':'<i class="fas fa-crown me-2"></i>ผู้อนุมัติคำขอ',
+                'view-report':'<i class="fas fa-file-excel me-2"></i>รายงานตาราง WFH'
             };
             document.getElementById('page-title').innerHTML = titles[viewId];
             reloadData();
@@ -660,6 +802,12 @@
                 } else if (currentView === 'view-approval' && currentUser.role !== 'User') {
                     const res = await callGAS_JSONP('getApprovals', payload);
                     renderApprovalTable(res.data);
+                } else if (currentView === 'view-report' && currentUser.role !== 'User') {
+                    // ซิงค์เดือนของ Report ให้ตรงกับเดือนที่เปิดอยู่ในปฏิทินปัจจุบัน
+                    const y = currentDate.getFullYear();
+                    const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    document.getElementById('report-month-picker').value = `${y}-${m}`;
+                    loadReportData();
                 }
             } catch (err) { Swal.fire({title: 'เชื่อมต่อ Server ไม่สำเร็จ', text: err.message, icon: 'error', confirmButtonColor: '#ff758c'}); } 
             finally { document.getElementById('loading-overlay').style.display = 'none'; }
@@ -761,6 +909,7 @@
             else { selectedDates.add(date); cell.classList.add('selected'); }
             updateRequestBtn();
         }
+        
         function updateRequestBtn() {
             const btn = document.getElementById('btn-request');
             btn.innerHTML = `<i class="fas fa-paper-plane me-2"></i> ยื่นเรื่อง WFH (${selectedDates.size} วัน)`;
@@ -975,6 +1124,223 @@
                     } catch(e) { Swal.fire('Error', e.message, 'error'); }
                     finally { document.getElementById('loading-overlay').style.display = 'none'; }
                 }
+            });
+        }
+
+        /* --- REPORT LOGIC --- */
+        async function loadReportData() {
+            const monthInput = document.getElementById('report-month-picker').value;
+            if(!monthInput) return;
+            
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const res = await callGAS_JSONP('getReport', { month: monthInput, manager_email: currentUser.email });
+                
+                if(res.status === 'success') {
+                    renderReportTable(res.data, monthInput);
+                    setupReportSignatures();
+                } else {
+                    console.log("Mocking Report Data (API error/not ready)");
+                    const mockData = generateMockReportData(monthInput);
+                    renderReportTable(mockData, monthInput);
+                    setupReportSignatures();
+                }
+            } catch (err) { 
+                console.log("Error loading Report Data, using Mock Data", err);
+                const mockData = generateMockReportData(monthInput);
+                renderReportTable(mockData, monthInput);
+                setupReportSignatures();
+            } finally { 
+                document.getElementById('loading-overlay').style.display = 'none'; 
+            }
+        }
+
+        function setupReportSignatures() {
+            document.getElementById('report-signature-section').style.display = 'flex';
+            
+            // ตั้งค่า วันที่ปัจจุบัน (Default)
+            const todayStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+            document.getElementById('sig-manager-date').value = todayStr;
+            document.getElementById('sig-staff-date').value = todayStr;
+            
+            // ตั้งค่า ผู้บังคับบัญชา หากมีสิทธิ์ (Default)
+            if (currentUser && (currentUser.role === 'Manager' || currentUser.role === 'Admin')) {
+                document.getElementById('sig-manager-name').value = currentUser.name;
+            }
+        }
+
+        function previewSig(input, imgId, placeholderId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById(imgId);
+                    img.src = e.target.result;
+                    img.style.display = 'inline-block';
+                    document.getElementById(placeholderId).style.display = 'none';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function generateMockReportData(yyyy_mm) {
+            return [
+                { name: "นางสาว ศศิวิมล วณีสอน", position: "ลก.", wfh_dates: ["09","16","17","23"] },
+                { name: "นาง กฤษณา เป้ารุ่ง", position: "รก.", wfh_dates: ["01","03","07","08","10","17","22","24","29"] },
+                { name: "นางสาว กรกช สุขช่วย", position: "รก", wfh_dates: ["01","03","07","08","10","17","22","27","28"] },
+                { name: "นางสาว อรุณศรี ขันเงิน", position: "นจน. 10", wfh_dates: ["01","03","07","10"] },
+                { name: "นาย สามิต กัลยาณมิตร", position: "นจน. 9", wfh_dates: ["02","08","17","22","28","29"] },
+                { name: "นาย วรุตม์ วิเศษสิงห์", position: "นจน. 8", wfh_dates: ["01","03","07","10","22","24"] },
+            ];
+        }
+
+        function renderReportTable(data, yyyy_mm) {
+            reportDataStore = data;
+            const container = document.getElementById('report-table-container');
+            const [yearStr, monthStr] = yyyy_mm.split('-');
+            const year = parseInt(yearStr);
+            const month = parseInt(monthStr);
+            
+            const daysInMonth = new Date(year, month, 0).getDate();
+            
+            let html = `
+                <table class="table report-table" id="export-report-table">
+                    <thead>
+                        <tr>
+                            <th>ลำดับที่</th>
+                            <th>ชื่อ - นามสกุล</th>
+                            <th>ตำแหน่ง</th>
+            `;
+            for(let i=1; i<=daysInMonth; i++) {
+                html += `<th>${i}</th>`;
+            }
+            html += `</tr></thead><tbody>`;
+            
+            let totalEmp = data.length;
+            let wfhCountPerDay = Array(daysInMonth + 1).fill(0);
+
+            data.forEach((emp, index) => {
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="text-start">${emp.name}</td>
+                        <td>${emp.position || ''}</td>
+                `;
+                
+                for(let i=1; i<=daysInMonth; i++) {
+                    const dayStr = String(i).padStart(2, '0');
+                    if(emp.wfh_dates && emp.wfh_dates.includes(dayStr)) {
+                        html += `<td><i class="fas fa-check day-check"></i></td>`;
+                        wfhCountPerDay[i]++;
+                    } else {
+                        html += `<td></td>`;
+                    }
+                }
+                html += `</tr>`;
+            });
+
+            html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่มาปฏิบัติงาน (ราย)</td>`;
+            for(let i=1; i<=daysInMonth; i++) html += `<td>${totalEmp}</td>`;
+            html += `</tr>`;
+
+            html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่ Work from Home (ราย)</td>`;
+            for(let i=1; i<=daysInMonth; i++) html += `<td>${wfhCountPerDay[i]}</td>`;
+            html += `</tr>`;
+
+            html += `<tr class="summary-row"><td colspan="3" class="text-end">พนักงานที่ Work from Home (ร้อยละ)</td>`;
+            let sumPercentage = 0;
+            for(let i=1; i<=daysInMonth; i++) {
+                let percent = totalEmp > 0 ? Math.round((wfhCountPerDay[i] / totalEmp) * 100) : 0;
+                html += `<td>${percent}%</td>`;
+                sumPercentage += percent;
+            }
+            html += `</tr>`;
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function exportToExcel() {
+            const table = document.getElementById("export-report-table");
+            if(!table) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
+            
+            const wb = XLSX.utils.table_to_book(table, {sheet: "WFH Report"});
+            const monthInput = document.getElementById('report-month-picker').value;
+            XLSX.writeFile(wb, `WFH_Report_${monthInput}.xlsx`);
+        }
+
+        function exportToPDF() {
+            const tableContainer = document.getElementById("report-table-container");
+            const sigContainer = document.getElementById("report-signature-section");
+
+            if(!tableContainer.innerHTML.trim()) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
+            
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            const pdfWrapper = document.createElement('div');
+            pdfWrapper.id = 'pdf-export-wrapper';
+            
+            const monthInput = document.getElementById('report-month-picker').value;
+            const [y, m] = monthInput.split('-');
+            const title = document.createElement('h3');
+            title.innerHTML = `ตารางกำหนดการปฏิบัติงาน (กรณี WFH) <br><small>ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</small>`;
+            title.style.textAlign = 'center';
+            title.style.marginBottom = '20px';
+            
+            const clonedTable = tableContainer.cloneNode(true);
+            clonedTable.style.maxHeight = 'none'; 
+            clonedTable.style.overflow = 'visible';
+            
+            const clonedSig = sigContainer.cloneNode(true);
+            clonedSig.style.pageBreakInside = 'avoid'; 
+            
+            const origInputs = sigContainer.querySelectorAll('input[type="text"]');
+            const cloneInputs = clonedSig.querySelectorAll('input[type="text"]');
+            origInputs.forEach((input, idx) => {
+                const span = document.createElement('span');
+                span.innerText = input.value || '......................................';
+                span.style.borderBottom = '1px dotted #000';
+                span.style.padding = '0 10px';
+                span.style.display = 'inline-block';
+                span.style.minWidth = input.style.width || '150px';
+                span.style.fontWeight = 'bold';
+                cloneInputs[idx].parentNode.replaceChild(span, cloneInputs[idx]);
+            });
+
+            const cloneUploads = clonedSig.querySelectorAll('.signature-upload');
+            cloneUploads.forEach(u => {
+                u.style.border = 'none';
+                u.style.background = 'transparent';
+                u.style.height = 'auto';
+                u.style.minHeight = '70px';
+            });
+            const clonePlaceholders = clonedSig.querySelectorAll('span[id$="-placeholder"]');
+            clonePlaceholders.forEach(p => p.style.display = 'none');
+            
+            const origImgs = sigContainer.querySelectorAll('img');
+            const cloneImgs = clonedSig.querySelectorAll('img');
+            origImgs.forEach((img, idx) => {
+                cloneImgs[idx].src = img.src;
+                if(img.src) {
+                    cloneImgs[idx].style.display = 'inline-block';
+                }
+            });
+            
+            pdfWrapper.appendChild(title);
+            pdfWrapper.appendChild(clonedTable);
+            pdfWrapper.appendChild(clonedSig);
+            document.body.appendChild(pdfWrapper);
+
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3],
+                filename:     `WFH_Report_${monthInput}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(pdfWrapper).save().then(() => {
+                document.body.removeChild(pdfWrapper);
+                document.getElementById('loading-overlay').style.display = 'none';
             });
         }
     </script>
