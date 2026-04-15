@@ -255,7 +255,6 @@
             color: var(--sweet-pink);
         }
         .summary-row td { background-color: #fff5f8 !important; }
-        .day-check { color: var(--status-success); font-weight: bold; font-size: 1.2rem; }
         
         /* Signature Styles */
         .signature-upload {
@@ -1215,9 +1214,16 @@
 
         // ฟังก์ชัน Export PDF - แบบโครงสร้างใหม่ ไม่มีตกขอบและหน้าขาว 100%
         function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
-            const overlay = document.getElementById('loading-overlay');
-            overlay.style.backgroundColor = '#ffffff'; 
-            overlay.style.display = 'flex';
+            // ใช้ SweetAlert แสดงสถานะโหลด เพื่อไม่ให้ไปทับกับ Canvas จนเกิดหน้าขาว
+            Swal.fire({
+                title: 'กำลังสร้างเอกสาร PDF...',
+                html: 'กรุณารอสักครู่ ระบบกำลังประมวลผล',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             
             const oldWrapper = document.getElementById('pdf-export-wrapper');
             if (oldWrapper) document.body.removeChild(oldWrapper);
@@ -1225,13 +1231,12 @@
             const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
             
-            // จำกัดพื้นที่ให้เท่ากับขนาด A4 (794px) ทำให้แคปเจอร์ภาพออกมาสมบูรณ์แบบไม่แหว่ง 100%
-            pdfWrapper.style.position = 'absolute';
+            // ไม้ตายแก้หน้าขาว: ผลัก Element ให้ออกนอกจอไปทางซ้ายสุดๆ (-3000px)
+            // วิธีนี้เบราว์เซอร์จะยังคง Render กราฟิกอยู่ 100% แต่ไม่รบกวนหน้าจอผู้ใช้
+            pdfWrapper.style.position = 'fixed';
             pdfWrapper.style.top = '0';
-            pdfWrapper.style.left = '0';
-            pdfWrapper.style.width = '794px'; 
-            pdfWrapper.style.minHeight = '1123px';
-            pdfWrapper.style.zIndex = '9998'; 
+            pdfWrapper.style.left = '-3000px'; 
+            pdfWrapper.style.width = '800px'; // ขนาดพอดี A4 แนวตั้ง (Portrait)
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '40px'; 
             pdfWrapper.style.boxSizing = 'border-box';
@@ -1252,24 +1257,20 @@
             document.body.appendChild(pdfWrapper);
 
             const opt = {
-                margin: 0, // ป้องกันขอบซ้อนทับที่ทำให้แหว่งขวา เราใช้ padding จาก container ด้านบนแทน
+                margin: 0.3, // เพิ่ม Margin ให้สวยงาม
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                // บังคับสัดส่วนการเรนเดอร์ให้ล็อคติดอยู่กับความกว้าง A4 เป๊ะๆ
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 794, width: 794, scrollX: 0, scrollY: 0 }, 
-                jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+                // บังคับ windowWidth ที่ 800 เพื่อให้พอดีกับ wrapper 
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 800 }, 
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
 
             setTimeout(() => {
                 html2pdf().set(opt).from(pdfWrapper).save().then(() => {
                     if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-                    overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
-                    overlay.style.display = 'none';
                     Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
                 }).catch(err => {
                     if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-                    overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
-                    overlay.style.display = 'none';
                     Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
                 });
             }, 800); 
