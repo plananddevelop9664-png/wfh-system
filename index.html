@@ -955,7 +955,9 @@
             container.innerHTML = html;
         }
 
-        // ระบบ Preview & Export สำหรับ Excel (เห็นภาพก่อนโหลดจริง และจัด Layout ลายเซ็นลง Excel ตรงเป๊ะ)
+        // =========================================================
+        // โซน EXCEL EXPORT (บังคับตีเส้นขอบดำ 100% พร้อมลายเซ็น)
+        // =========================================================
         function previewExcel() {
             const tableContainer = document.getElementById("report-table-container");
             if(!tableContainer.innerHTML.trim()) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
@@ -964,22 +966,27 @@
             const [y, m] = monthInput.split('-');
             const titleText = `ตารางกำหนดการปฏิบัติงาน (กรณี WFH) ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}`;
             const daysInMonth = new Date(parseInt(y), parseInt(m), 0).getDate();
-            const totalCols = daysInMonth + 3; // คอลัมน์ลำดับ, ชื่อ, ตำแหน่ง + จำนวนวัน
+            const totalCols = daysInMonth + 3; 
 
+            // Clone Table เพื่อนำไปแก้โครงสร้าง CSS ภายใน
             const clonedTable = tableContainer.cloneNode(true);
             const tbl = clonedTable.querySelector('table');
-            // ทำ CSS ให้ตารางดูเนียนตาตอน Preview
+            
+            // สำคัญมากสำหรับ Excel: ต้องฝัง border="1" และ inline-style เข้าไปในทุก Tag
+            tbl.setAttribute('border', '1');
             tbl.style.width = '100%'; 
             tbl.style.borderCollapse = 'collapse';
+            tbl.style.fontFamily = "'TH SarabunPSK', 'Sarabun', sans-serif";
+
             const allCells = tbl.querySelectorAll('th, td');
             allCells.forEach(cell => { 
-                cell.style.border = '1px solid #000'; 
+                cell.style.border = '0.5pt solid black'; // เส้นตาราง Excel สีดำ 
                 cell.style.padding = '5px'; 
-                cell.style.fontSize = '12px'; 
+                cell.style.fontSize = '14pt'; // ขนาดฟอนต์ MS Excel ปกติ 
                 cell.style.whiteSpace = 'nowrap'; 
-                cell.style.color = '#000';
-                cell.style.backgroundColor = '#fff';
-                cell.style.fontFamily = "'Sarabun', sans-serif";
+                cell.style.color = '#000000';
+                cell.style.backgroundColor = '#ffffff';
+                cell.style.fontFamily = "'TH SarabunPSK', 'Sarabun', sans-serif";
             });
             
             const mName = document.getElementById('sig-manager-name').value || '......................................';
@@ -990,13 +997,14 @@
             const sPos = document.getElementById('sig-staff-position').value || 'ผู้ปฏิบัติงาน';
             const sDate = document.getElementById('sig-staff-date').value || '.........................';
 
+            // เตรียมรูปภาพลายเซ็น (บังคับใช้ attribute width, height ไม่ใช้ CSS ล้วนๆ เพราะ Excel มองไม่เห็น)
             const mImgPdf = document.getElementById('sig-manager-img');
-            const mImgTag = (mImgPdf.style.display !== 'none' && mImgPdf.src) ? `<img src="${mImgPdf.src}" style="height:50px;">` : `<br><br>`;
+            const mImgTag = (mImgPdf.style.display !== 'none' && mImgPdf.src) ? `<img src="${mImgPdf.src}" width="100" height="50">` : `<br><br>`;
             
             const sImgPdf = document.getElementById('sig-staff-img');
-            const sImgTag = (sImgPdf.style.display !== 'none' && sImgPdf.src) ? `<img src="${sImgPdf.src}" style="height:50px;">` : `<br><br>`;
+            const sImgTag = (sImgPdf.style.display !== 'none' && sImgPdf.src) ? `<img src="${sImgPdf.src}" width="100" height="50">` : `<br><br>`;
 
-            // โครงสร้างลายเซ็นสำหรับแสดงผลพรีวิวในหน้าจอ (ใช้ Table เหมือนกับ PDF)
+            // โครงสร้างสำหรับแสดงพรีวิวบนหน้าจอ
             const sigHtmlForPreview = `
             <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 30px; font-family: 'Sarabun', sans-serif; font-size: 16px; background-color: #ffffff;">
                 <tr style="border: none;">
@@ -1036,15 +1044,16 @@
                 cancelButtonText: 'ปิดพรีวิว'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    generateAndDownloadExcel(titleText, tbl.innerHTML, totalCols, monthInput, mName, mPos, mDate, mImgTag, sName, sPos, sDate, sImgTag);
+                    generateAndDownloadExcel(titleText, tbl.outerHTML, totalCols, monthInput, mName, mPos, mDate, mImgTag, sName, sPos, sDate, sImgTag);
                 }
             });
         }
 
-        // ฟังก์ชันสร้างและดาวน์โหลดไฟล์ Excel (.xls) ที่จัด Layout สมบูรณ์แล้ว
-        function generateAndDownloadExcel(titleText, tableInnerHtml, totalCols, monthInput, mName, mPos, mDate, mImgTag, sName, sPos, sDate, sImgTag) {
-            // คำนวณ Colspan ให้พอดีกับกระดาษ Excel โดย Manager = 8 cols, เว้นช่องว่างตรงกลาง = 6 cols, Staff = ที่เหลือ (ประมาณ 17-20 cols)
-            const staffColspan = totalCols - 17 > 0 ? totalCols - 17 : 10;
+        // ฟังก์ชันโหลดไฟล์ Excel
+        function generateAndDownloadExcel(titleText, tableOuterHtml, totalCols, monthInput, mName, mPos, mDate, mImgTag, sName, sPos, sDate, sImgTag) {
+            // คำนวณความกว้างคอลัมน์ลายเซ็นซ้าย/ขวา ให้สอดคล้องกับตารางหลัก
+            const leftColSpan = Math.floor(totalCols / 2);
+            const rightColSpan = totalCols - leftColSpan;
             
             const excelHtml = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -1052,12 +1061,11 @@
                 <meta charset="utf-8">
                 <style>
                     @page { size: landscape; margin: 0.5in; }
-                    /* บังคับใช้ Font Sarabun และเส้นตารางบางสีดำ */
-                    body { font-family: 'Sarabun', sans-serif; }
+                    body { font-family: 'TH SarabunPSK', 'Sarabun', sans-serif; }
+                    /* การบังคับ Table สำหรับ Excel ต้องชัดเจน */
                     table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 0.5pt solid black !important; padding: 5px; text-align: center; font-size: 12px; white-space: nowrap; font-family: 'Sarabun', sans-serif; }
                     .no-border { border: none !important; }
-                    .title { font-size: 18px; font-weight: bold; border: none !important; text-align: center; }
+                    .title { font-size: 20px; font-weight: bold; border: none !important; text-align: center; }
                     .sig-col { border: none !important; padding-top: 15px; text-align: center; vertical-align: bottom; }
                 </style>
             </head>
@@ -1065,31 +1073,27 @@
                 <table>
                     <tr><td colspan="${totalCols}" class="title">${titleText}</td></tr>
                     <tr><td colspan="${totalCols}" class="no-border" style="height: 15px;"></td></tr>
-                    ${tableInnerHtml}
+                </table>
+                <!-- Table ข้อมูลหลักที่โดนตั้งค่า border ไว้แล้ว -->
+                ${tableOuterHtml}
+                <!-- Table ลายเซ็น -->
+                <table>
                     <tr><td colspan="${totalCols}" class="no-border" style="height: 30px;"></td></tr>
                     <tr>
-                        <td colspan="3" class="no-border"></td>
-                        <td colspan="8" class="sig-col">${mImgTag.replace('style="height:50px;"', 'height="60"')}</td>
-                        <td colspan="6" class="no-border"></td>
-                        <td colspan="${staffColspan}" class="sig-col">${sImgTag.replace('style="height:50px;"', 'height="60"')}</td>
+                        <td colspan="${leftColSpan}" class="sig-col">${mImgTag}</td>
+                        <td colspan="${rightColSpan}" class="sig-col">${sImgTag}</td>
                     </tr>
                     <tr>
-                        <td colspan="3" class="no-border"></td>
-                        <td colspan="8" class="sig-col">ลงชื่อ <b>${mName}</b></td>
-                        <td colspan="6" class="no-border"></td>
-                        <td colspan="${staffColspan}" class="sig-col">ลงชื่อ <b>${sName}</b></td>
+                        <td colspan="${leftColSpan}" class="sig-col">ลงชื่อ <b>${mName}</b></td>
+                        <td colspan="${rightColSpan}" class="sig-col">ลงชื่อ <b>${sName}</b></td>
                     </tr>
                     <tr>
-                        <td colspan="3" class="no-border"></td>
-                        <td colspan="8" class="no-border" style="text-align:center;">ตำแหน่ง ${mPos}</td>
-                        <td colspan="6" class="no-border"></td>
-                        <td colspan="${staffColspan}" class="no-border" style="text-align:center;">ตำแหน่ง ${sPos}</td>
+                        <td colspan="${leftColSpan}" class="no-border" style="text-align:center;">ตำแหน่ง ${mPos}</td>
+                        <td colspan="${rightColSpan}" class="no-border" style="text-align:center;">ตำแหน่ง ${sPos}</td>
                     </tr>
                     <tr>
-                        <td colspan="3" class="no-border"></td>
-                        <td colspan="8" class="no-border" style="text-align:center;">วันที่ ${mDate}</td>
-                        <td colspan="6" class="no-border"></td>
-                        <td colspan="${staffColspan}" class="no-border" style="text-align:center;">วันที่ ${sDate}</td>
+                        <td colspan="${leftColSpan}" class="no-border" style="text-align:center;">วันที่ ${mDate}</td>
+                        <td colspan="${rightColSpan}" class="no-border" style="text-align:center;">วันที่ ${sDate}</td>
                     </tr>
                 </table>
             </body>
@@ -1104,7 +1108,10 @@
             URL.revokeObjectURL(url);
         }
 
-        // ระบบ Preview & Export สำหรับ PDF (แก้ปัญหาหน้าขาว ตกบรรทัด และโดนตัดตาราง 100%)
+
+        // =========================================================
+        // โซน PDF EXPORT (แก้หน้าขาว 100% จัด Layout ด้วย Table)
+        // =========================================================
         function previewPDF() {
             const tableContainer = document.getElementById("report-table-container");
             if(!tableContainer.innerHTML.trim()) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
@@ -1132,7 +1139,7 @@
                 cell.style.color = '#000';
                 cell.style.backgroundColor = '#ffffff';
                 cell.style.whiteSpace = 'nowrap';
-                cell.style.fontFamily = "'Sarabun', sans-serif";
+                cell.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
             });
             
             // Layout ลายเซ็นแบบใช้ตาราง (Table Layout) รับประกันว่าไม่ตกบรรทัด
@@ -1149,7 +1156,7 @@
             const sImgTag = (sImgPdf.style.display !== 'none' && sImgPdf.src) ? `<img src="${sImgPdf.src}" style="max-height: 50px;">` : `<div style="height: 50px;"></div>`;
 
             const sigHtmlForPdf = `
-            <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 40px; font-family: 'Sarabun', sans-serif; font-size: 16px; background-color: #ffffff;">
+            <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 40px; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; font-size: 16px; background-color: #ffffff;">
                 <tr style="border: none; background-color: #ffffff;">
                     <td style="width: 50%; text-align: center; border: none; padding-top: 20px; background-color: #ffffff; color: #000;">
                         ${mImgTag}<br><br>
@@ -1191,11 +1198,13 @@
             });
         }
 
+        // ฟังก์ชัน Export PDF - แก้ปัญหาหน้าขาว 100% โดยวางทับบนหน้าจอโดยตรง
         function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
             const overlay = document.getElementById('loading-overlay');
             overlay.style.backgroundColor = '#ffffff'; 
             overlay.style.display = 'flex';
             
+            // การ Scroll คืนค่าเป็น 0 เป็นสิ่งสำคัญเพื่อกัน Html2canvas แคปผิดตำแหน่ง
             window.scrollTo(0, 0); 
             
             const oldWrapper = document.getElementById('pdf-export-wrapper');
@@ -1204,8 +1213,9 @@
             const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
             
-            // แก้ไข PDF เป็นหน้าขาว: นำ element มาวางที่ Top 0, Left 0 เพื่อให้โปรแกรม capture เจอ
-            // ให้มี z-index 9998 เพื่อให้โดนซ่อนอยู่ด้านหลังหน้าโหลดดิ้ง (loading-overlay มี 9999) 
+            // *** เคล็ดลับแก้ PDF ขาว:
+            // เอา Element วางไว้ตำแหน่ง top:0, left:0 เลย (เลิกใช้ -9999px เด็ดขาด เพราะเบราว์เซอร์ยุคใหม่จะไม่วาดสิ่งที่มองไม่เห็น)
+            // แล้วใช้ z-index: 9998 ให้มันซ่อนอยู่ใต้ Overlay Loading (ซึ่งมี z-index 9999)
             pdfWrapper.style.position = 'absolute';
             pdfWrapper.style.top = '0';
             pdfWrapper.style.left = '0';
@@ -1214,7 +1224,7 @@
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '30px';
             pdfWrapper.style.color = '#000000';
-            pdfWrapper.style.fontFamily = "'Sarabun', sans-serif";
+            pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
             
             pdfWrapper.innerHTML = titleHtml + tableHtml + sigHtml;
             document.body.appendChild(pdfWrapper);
@@ -1223,8 +1233,8 @@
                 margin: [0.3, 0.3, 0.3, 0.3], 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                // กำหนด windowWidth 1200 เพื่อบังคับให้กาง HTML เต็ม 1200px ก่อนย่อใส่ A4
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 1200 }, 
+                // เพิ่ม windowWidth 1200 เพื่อบังคับความกว้างจอ และ x:0, y:0 เพื่อกันเหลื่อม
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 1200, scrollX: 0, scrollY: 0, x: 0, y: 0 }, 
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
