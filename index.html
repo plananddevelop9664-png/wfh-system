@@ -1126,30 +1126,67 @@
             
             if(tbl) { 
                 tbl.classList.remove('report-table');
-                tbl.style.width = '100%'; // บังคับให้กาง 100% ภายใน Wrapper ที่เราสร้าง
-                tbl.style.tableLayout = 'auto';
+                tbl.style.width = '100%';
+                tbl.style.tableLayout = 'fixed';
                 tbl.style.borderCollapse = 'collapse';
+                tbl.style.backgroundColor = '#ffffff';
             }
             
-            // ตั้งค่า CSS ให้กับตาราง (บังคับพื้นหลังขาว เส้นดำ ฟอนต์ Sarabun)
+            // --- ตั้งค่า CSS ให้กับทุก cell แบบ inline อย่างครบถ้วน ---
             const allCells = tbl.querySelectorAll('th, td');
-            allCells.forEach((cell) => { 
-                const existingColor = cell.style.color; // เก็บสีเดิมไว้ เช่น เครื่องหมายถูกสีเขียว
-                cell.style.position = 'static'; // ลบ sticky ป้องกันบัคคอลัมน์แรกหาย
-                cell.style.left = 'auto'; // คืนค่าคอลัมน์ซ้ายสุดที่ถูกล็อคไว้ 
+            allCells.forEach((cell) => {
+                cell.style.position = 'static';
+                cell.style.left = 'auto';
                 cell.style.zIndex = 'auto';
-                cell.style.fontSize = '11px'; 
+                cell.style.fontSize = '10px';
                 cell.style.padding = '4px 2px';
-                cell.style.border = '1px solid #000'; 
+                cell.style.border = '1px solid #000000';
                 cell.style.backgroundColor = '#ffffff';
-                cell.style.whiteSpace = 'nowrap'; // ป้องกันการตัดบรรทัดในตาราง
+                cell.style.color = '#000000';
+                cell.style.whiteSpace = 'nowrap';
                 cell.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
-                if (!existingColor) {
-                    cell.style.color = '#000000';
+                cell.style.textAlign = 'center';
+                cell.style.verticalAlign = 'middle';
+            });
+
+            // --- Header row: พื้นหลังชมพู ตัวอักษรขาว ---
+            tbl.querySelectorAll('thead th').forEach((th) => {
+                th.style.backgroundColor = '#ff758c';
+                th.style.color = '#ffffff';
+                th.style.fontWeight = 'bold';
+                th.style.fontSize = '10px';
+            });
+
+            // --- ชื่อ-นามสกุล: จัดชิดซ้าย ---
+            tbl.querySelectorAll('tbody tr td:nth-child(2)').forEach((td) => {
+                td.style.textAlign = 'left';
+                td.style.paddingLeft = '6px';
+            });
+
+            // --- เครื่องหมายถูก ✓: บังคับสีเขียว ---
+            tbl.querySelectorAll('tbody td').forEach((td) => {
+                if(td.innerHTML.includes('&#10003;') || td.innerHTML.includes('✓')) {
+                    td.style.color = '#20c997';
+                    td.style.fontWeight = 'bold';
+                    td.style.fontSize = '13px';
+                }
+            });
+
+            // --- Summary rows: พื้นหลังชมพูอ่อน ตัวอักษรชมพู ---
+            tbl.querySelectorAll('tbody tr').forEach((tr) => {
+                if(tr.classList.contains('summary-row')) {
+                    tr.querySelectorAll('td').forEach((td) => {
+                        td.style.backgroundColor = '#fff5f8';
+                        td.style.color = '#ff758c';
+                        td.style.fontWeight = 'bold';
+                    });
+                    // td แรก (colspan=3, text-end)
+                    const firstTd = tr.querySelector('td');
+                    if(firstTd) firstTd.style.textAlign = 'right';
                 }
             });
             
-            // Layout ลายเซ็นแบบใช้ตาราง (Table Layout) รับประกันว่าไม่ตกบรรทัด
+            // Layout ลายเซ็น
             const mName = document.getElementById('sig-manager-name').value || '......................................';
             const mPos = document.getElementById('sig-manager-position').value || 'ผู้บังคับบัญชา';
             const mDate = document.getElementById('sig-manager-date').value || '.........................';
@@ -1215,46 +1252,46 @@
             });
         }
 
-        // ฟังก์ชัน Export PDF - แก้ปัญหาหน้าขาวและตารางเบี้ยว แบบสมบูรณ์ 100%
+        // ฟังก์ชัน Export PDF - แก้ปัญหาหน้าขาวและตารางเบี้ยว
         function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
             const overlay = document.getElementById('loading-overlay');
-            overlay.style.backgroundColor = '#ffffff'; 
-            overlay.style.display = 'flex';
-            
-            window.scrollTo(0, 0); 
-            
+
+            // --- ขั้นตอนที่ 1: ซ่อน overlay ก่อน เพราะ html2canvas จะ capture ทุกอย่างที่มองเห็น ---
+            overlay.style.display = 'none';
+
+            window.scrollTo(0, 0);
+
             const oldWrapper = document.getElementById('pdf-export-wrapper');
             if (oldWrapper) document.body.removeChild(oldWrapper);
 
-            const pdfWrapper = document.createElement('div'); 
+            const pdfWrapper = document.createElement('div');
             pdfWrapper.id = 'pdf-export-wrapper';
-            
-            // ยกเลิกการซ่อน app-container เพื่อไม่ให้เกิดหน้าขาว
-            // ใช้ position: absolute ทับที่พิกัด 0,0 ภายใต้ z-index 9998
-            pdfWrapper.style.position = 'absolute';
+
+            // --- ขั้นตอนที่ 2: วาง wrapper นอกหน้าจอทางซ้าย ไม่ใช่ซ้อนทับหน้าจอ ---
+            // ใช้ position:fixed + left:-9999px เพื่อให้ html2canvas เห็น แต่ user ไม่เห็น
+            pdfWrapper.style.position = 'fixed';
             pdfWrapper.style.top = '0';
-            pdfWrapper.style.left = '0';
-            pdfWrapper.style.width = '1400px'; 
-            pdfWrapper.style.minHeight = '100vh';
-            pdfWrapper.style.zIndex = '9998'; 
+            pdfWrapper.style.left = '-9999px';
+            pdfWrapper.style.width = '1400px';
             pdfWrapper.style.backgroundColor = '#ffffff';
-            pdfWrapper.style.padding = '40px'; 
+            pdfWrapper.style.padding = '40px';
             pdfWrapper.style.boxSizing = 'border-box';
             pdfWrapper.style.color = '#000000';
             pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
-            
-            // จัด Layout ให้กึ่งกลางสมบูรณ์และไม่แหว่ง 
+            pdfWrapper.style.zIndex = '-1';
+
+            // จัดการ Layout ให้กึ่งกลางสมบูรณ์และไม่แหว่ง
             pdfWrapper.innerHTML = `
                 <div style="width: 100%; text-align: center; margin-bottom: 20px;">
                     ${titleHtml}
                 </div>
-                <div style="width: 100%; display: flex; justify-content: center; margin-bottom: 30px;">
+                <div style="width: 100%; overflow: visible; margin-bottom: 30px;">
                     <div style="width: 100%;">
                         ${tableHtml}
                     </div>
                 </div>
-                <div style="width: 100%; display: flex; justify-content: center;">
-                    <div style="width: 100%; max-width: 1000px;">
+                <div style="width: 100%;">
+                    <div style="width: 100%; max-width: 1000px; margin: 0 auto;">
                         ${sigHtml}
                     </div>
                 </div>
@@ -1262,31 +1299,70 @@
             document.body.appendChild(pdfWrapper);
 
             const opt = {
-                margin: 0.2, 
+                margin: [0.3, 0.2, 0.3, 0.2],
                 filename: `WFH_Report_${monthInput}.pdf`,
-                image: { type: 'jpeg', quality: 1.0 }, 
-                // บังคับความกว้าง html2canvas ให้เท่ากับ Wrapper ที่ 1400 พอดีเป๊ะ ไม่ให้หลุดขอบ
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400, width: 1400, scrollX: 0, scrollY: 0 }, 
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    windowWidth: 1400,
+                    scrollX: 0,
+                    scrollY: 0,
+                    logging: false,
+                    // --- ขั้นตอนที่ 3: รอฟอนต์ภาษาไทยโหลดเสร็จก่อน capture ---
+                    onclone: function(clonedDoc) {
+                        return document.fonts.ready.then(function() {
+                            // บังคับทุก cell ในตาราง clone ให้มีสีและพื้นหลังชัดเจน
+                            clonedDoc.querySelectorAll('#pdf-export-wrapper th, #pdf-export-wrapper td').forEach(function(cell) {
+                                cell.style.backgroundColor = '#ffffff';
+                                cell.style.color = cell.style.color || '#000000';
+                                cell.style.border = '1px solid #000000';
+                                cell.style.fontFamily = "'Sarabun', sans-serif";
+                                cell.style.position = 'static';
+                                cell.style.left = 'auto';
+                                cell.style.zIndex = 'auto';
+                            });
+                            // บังคับ header row ให้มีสีชมพู
+                            clonedDoc.querySelectorAll('#pdf-export-wrapper thead th').forEach(function(th) {
+                                th.style.backgroundColor = '#ff758c';
+                                th.style.color = '#ffffff';
+                            });
+                            // summary rows
+                            clonedDoc.querySelectorAll('#pdf-export-wrapper .summary-row td').forEach(function(td) {
+                                td.style.backgroundColor = '#fff5f8';
+                                td.style.color = '#ff758c';
+                                td.style.fontWeight = 'bold';
+                            });
+                        });
+                    }
+                },
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
-            setTimeout(() => {
-                html2pdf().set(opt).from(pdfWrapper).save().then(() => {
-                    if (document.body.contains(pdfWrapper)) {
-                        document.body.removeChild(pdfWrapper);
-                    }
+            // --- ขั้นตอนที่ 4: รอ 800ms ให้ DOM และฟอนต์พร้อมสมบูรณ์ก่อน render ---
+            document.fonts.ready.then(function() {
+                setTimeout(() => {
+                    // แสดง overlay แบบ loading เพื่อให้ user รู้ว่ากำลังสร้าง PDF
                     overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
-                    overlay.style.display = 'none';
-                    Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
-                }).catch(err => {
-                    if (document.body.contains(pdfWrapper)) {
-                        document.body.removeChild(pdfWrapper);
-                    }
-                    overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
-                    overlay.style.display = 'none';
-                    Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
-                });
-            }, 800); // เพิ่มเวลาหน่วงเล็กน้อยเพื่อให้แน่ใจว่าหน้าเว็บวาด DOM เสร็จสมบูรณ์
+                    overlay.style.display = 'flex';
+
+                    html2pdf().set(opt).from(pdfWrapper).save().then(() => {
+                        if (document.body.contains(pdfWrapper)) {
+                            document.body.removeChild(pdfWrapper);
+                        }
+                        overlay.style.display = 'none';
+                        Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
+                    }).catch(err => {
+                        if (document.body.contains(pdfWrapper)) {
+                            document.body.removeChild(pdfWrapper);
+                        }
+                        overlay.style.display = 'none';
+                        Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
+                    });
+                }, 800);
+            });
         }
 
         /* --- API HELPER FUNCTIONS --- */
