@@ -506,7 +506,8 @@
                                 
                                 <div class="d-flex gap-2">
                                     <input type="month" id="report-month-picker" class="form-control" style="width: auto;" onchange="loadReportData()">
-                                    <button class="btn btn-success rounded-pill px-4" onclick="exportToExcel()"><i class="fas fa-file-excel me-2"></i> Excel</button>
+                                    <!-- ปุ่ม Excel แก้ให้เรียก previewExcel ก่อนโหลด -->
+                                    <button class="btn btn-success rounded-pill px-4" onclick="previewExcel()"><i class="fas fa-file-excel me-2"></i> Excel</button>
                                     <button class="btn btn-danger rounded-pill px-4" onclick="previewPDF()"><i class="fas fa-file-pdf me-2"></i> PDF</button>
                                 </div>
                             </div>
@@ -937,7 +938,7 @@
                 html += `</tr>`;
             });
 
-            // จำนวนพนักงานที่มาปฏิบัติงาน = จำนวนพนักงานทั้งหมด ลบด้วย จำนวนพนักงานที่ WFH ในวันนั้น
+            // แก้ไข: จำนวนพนักงานที่มาปฏิบัติงาน = จำนวนพนักงานทั้งหมด ลบด้วย จำนวนพนักงานที่ WFH ในวันนั้น
             html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่มาปฏิบัติงาน (ราย)</td>`;
             for(let i=1; i<=daysInMonth; i++) html += `<td>${totalEmp > 0 ? totalEmp - wfhCountPerDay[i] : 0}</td>`;
             html += `</tr>`;
@@ -955,62 +956,92 @@
             container.innerHTML = html;
         }
 
-        // ระบบ Preview & Export สำหรับ Excel (เพิ่มลายเซ็นลงท้ายตาราง)
-        function exportToExcel() {
-            const table = document.getElementById("export-report-table");
-            if(!table) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
+        // ระบบ Preview & Export สำหรับ Excel (สร้างเป็นไฟล์ HTML แบบ MS Excel เพื่อรักษาเส้นตารางและ A4 Landscape)
+        function previewExcel() {
+            const tableContainer = document.getElementById("report-table-container");
+            const sigContainer = document.getElementById("report-signature-section");
+            if(!tableContainer.innerHTML.trim()) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
+
+            const monthInput = document.getElementById('report-month-picker').value;
+            const [y, m] = monthInput.split('-');
+            const titleText = `ตารางกำหนดการปฏิบัติงาน (กรณี WFH) ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}`;
+            const daysInMonth = new Date(parseInt(y), parseInt(m), 0).getDate();
+            const totalCols = daysInMonth + 3;
+
+            // ดึงข้อมูลตารางและลายเซ็น
+            const clonedTable = tableContainer.cloneNode(true);
+            const tbl = clonedTable.querySelector('table');
             
-            const clonedTable = table.cloneNode(true);
-            clonedTable.classList.remove('report-table');
-            clonedTable.style.width = '100%';
-            
-            // ดึงข้อมูลลายเซ็นจากหน้าเว็บมาต่อท้ายตารางก่อนนำไปพรีวิว/ดาวน์โหลด
-            const tbody = clonedTable.querySelector('tbody');
-            const mName = document.getElementById('sig-manager-name').value || '...........................................';
+            const mName = document.getElementById('sig-manager-name').value || '......................................';
             const mPos = document.getElementById('sig-manager-position').value || 'ผู้บังคับบัญชา';
-            const mDate = document.getElementById('sig-manager-date').value || '...........................';
+            const mDate = document.getElementById('sig-manager-date').value || '.........................';
             
-            const sName = document.getElementById('sig-staff-name').value || '...........................................';
+            const sName = document.getElementById('sig-staff-name').value || '......................................';
             const sPos = document.getElementById('sig-staff-position').value || 'ผู้ปฏิบัติงาน';
-            const sDate = document.getElementById('sig-staff-date').value || '...........................';
+            const sDate = document.getElementById('sig-staff-date').value || '.........................';
 
-            // สร้างแถวเปล่าและแถวลายเซ็นเพื่อให้โชว์ใน Excel สวยงาม
-            const sigHtml = `
-                <tr><td colspan="34" style="height: 30px;"></td></tr>
-                <tr>
-                    <td colspan="3"></td><td colspan="12" style="text-align:center; font-weight:bold;">ลงชื่อ ${mName}</td>
-                    <td colspan="6"></td><td colspan="12" style="text-align:center; font-weight:bold;">ลงชื่อ ${sName}</td>
-                </tr>
-                <tr>
-                    <td colspan="3"></td><td colspan="12" style="text-align:center;">ตำแหน่ง ${mPos}</td>
-                    <td colspan="6"></td><td colspan="12" style="text-align:center;">ตำแหน่ง ${sPos}</td>
-                </tr>
-                <tr>
-                    <td colspan="3"></td><td colspan="12" style="text-align:center;">วันที่ ${mDate}</td>
-                    <td colspan="6"></td><td colspan="12" style="text-align:center;">วันที่ ${sDate}</td>
-                </tr>
-            `;
-            tbody.insertAdjacentHTML('beforeend', sigHtml);
+            // สร้างโครงร่าง HTML สำหรับเปิดใน MS Excel (รองรับการตีเส้นและ Landscape A4)
+            const excelHtml = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    @page { size: landscape; margin: 0.5in; }
+                    body { font-family: 'Tahoma', sans-serif; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid black; padding: 5px; text-align: center; font-size: 11px; white-space: nowrap; }
+                    .no-border { border: none !important; }
+                    .title { font-size: 16px; font-weight: bold; border: none !important; text-align: center; }
+                    .sig-col { border: none !important; padding-top: 30px; text-align: center; }
+                </style>
+            </head>
+            <body>
+                <table>
+                    <tr><td colspan="${totalCols}" class="title">${titleText}</td></tr>
+                    <tr><td colspan="${totalCols}" class="no-border" style="height: 20px;"></td></tr>
+                    ${tbl.innerHTML}
+                    <tr><td colspan="${totalCols}" class="no-border" style="height: 40px;"></td></tr>
+                    <tr>
+                        <td colspan="3" class="no-border"></td>
+                        <td colspan="12" class="sig-col">ลงชื่อ <b>${mName}</b></td>
+                        <td colspan="6" class="no-border"></td>
+                        <td colspan="10" class="sig-col">ลงชื่อ <b>${sName}</b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="no-border"></td>
+                        <td colspan="12" class="no-border" style="text-align:center;">ตำแหน่ง ${mPos}</td>
+                        <td colspan="6" class="no-border"></td>
+                        <td colspan="10" class="no-border" style="text-align:center;">ตำแหน่ง ${sPos}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="no-border"></td>
+                        <td colspan="12" class="no-border" style="text-align:center;">วันที่ ${mDate}</td>
+                        <td colspan="6" class="no-border"></td>
+                        <td colspan="10" class="no-border" style="text-align:center;">วันที่ ${sDate}</td>
+                    </tr>
+                </table>
+            </body>
+            </html>`;
 
-            const allCells = clonedTable.querySelectorAll('th, td');
-            allCells.forEach(c => { c.style.position = 'static'; c.style.fontSize = '12px'; c.style.padding = '4px'; });
-
-            const previewHtml = `<div style="max-height: 50vh; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: white; text-align: left;">${clonedTable.outerHTML}</div>`;
-            
             Swal.fire({
-                title: 'พรีวิวข้อมูล Excel',
-                html: previewHtml,
-                width: '95%',
+                title: 'ยืนยันการดาวน์โหลด Excel',
+                text: "ข้อมูลตารางและลายเซ็นจะถูกจัดรูปแบบให้อยู่ในกระดาษ A4 แนวนอน พร้อมเส้นตารางแบบสมบูรณ์ค่ะ",
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#20c997',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fas fa-file-excel"></i> ยืนยันดาวน์โหลด Excel',
-                cancelButtonText: 'ปิด'
+                confirmButtonText: '<i class="fas fa-file-excel"></i> ดาวน์โหลด Excel',
+                cancelButtonText: 'ยกเลิก'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const wb = XLSX.utils.table_to_book(clonedTable, {sheet: "WFH Report"});
-                    const monthInput = document.getElementById('report-month-picker').value;
-                    XLSX.writeFile(wb, `WFH_Report_${monthInput}.xlsx`);
+                    // สร้างไฟล์ MS Excel Format (.xls) เพื่อให้จำค่า CSS Borders และ Layout ได้
+                    const blob = new Blob(['\ufeff', excelHtml], { type: 'application/vnd.ms-excel' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `WFH_Report_${monthInput}.xls`; // เซฟเป็น .xls 
+                    a.click();
+                    URL.revokeObjectURL(url);
                 }
             });
         }
@@ -1033,31 +1064,26 @@
                 tbl.style.width = '100%'; 
                 tbl.style.tableLayout = 'auto';
                 tbl.style.borderCollapse = 'collapse';
-                tbl.style.border = '1px solid #ccc';
             }
             
             // ตั้งค่า CSS ไม่ให้ชื่อหรือตำแหน่งตกบรรทัด
             const allCells = clonedTable.querySelectorAll('th, td');
             allCells.forEach((cell) => { 
                 cell.style.position = 'static'; 
-                cell.style.fontSize = '11px'; 
+                cell.style.fontSize = '10px'; // ขนาดฟอนต์สำหรับ PDF
                 cell.style.padding = '4px 2px';
-                cell.style.border = '1px solid #ccc';
+                cell.style.border = '1px solid #000'; // บังคับเส้นตารางสีดำ
                 cell.style.color = '#000';
                 cell.style.backgroundColor = '#fff';
-                // จัดการไม่ให้ตัดบรรทัด (nowrap) สำหรับช่องลำดับ, ชื่อ และตำแหน่ง
-                if (cell.cellIndex === 0 || cell.cellIndex === 1 || cell.cellIndex === 2) {
-                    cell.style.whiteSpace = 'nowrap';
-                } else {
-                    cell.style.whiteSpace = 'normal';
-                }
+                // จัดการไม่ให้ตัดบรรทัด (nowrap) สำคัญมาก
+                cell.style.whiteSpace = 'nowrap';
             });
             
             const clonedSig = sigContainer.cloneNode(true);
             clonedSig.style.display = 'flex';
             clonedSig.style.marginTop = '20px';
             clonedSig.style.paddingTop = '20px';
-            clonedSig.style.borderTop = '2px dashed #ccc';
+            clonedSig.style.borderTop = '1px dashed #ccc';
             
             const origInputs = sigContainer.querySelectorAll('input[type="text"]');
             const cloneInputs = clonedSig.querySelectorAll('input[type="text"]');
@@ -1067,7 +1093,7 @@
                 if(input.id.includes('position')) { span.style.borderBottom = 'none'; } 
                 else { span.style.borderBottom = '1px dotted #000'; }
                 span.style.padding = '0 10px'; span.style.display = 'inline-block'; 
-                span.style.minWidth = input.style.width || '120px'; span.style.fontWeight = 'bold';
+                span.style.whiteSpace = 'nowrap'; span.style.fontWeight = 'bold';
                 cloneInputs[idx].parentNode.replaceChild(span, cloneInputs[idx]);
             });
 
@@ -1083,7 +1109,7 @@
                 if(img.src) cloneImgs[idx].style.display = 'inline-block';
             });
             
-            // สร้างกระดาษจำลองขนาด A4 แนวนอน (กว้าง ~1122px) ไว้แสดงตรงกลางให้เห็นของจริง!
+            // สร้างกระดาษจำลองขนาด A4 แนวนอน (กว้าง 1122px) ไว้แสดงตรงกลางให้เห็นของจริง!
             const previewHtml = `<div style="background: #525659; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
                 <div style="width: 1122px; min-width: 1122px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: left; color: black; font-family: 'Prompt', sans-serif; box-sizing: border-box;">
                     ${titleHtml}
@@ -1108,24 +1134,29 @@
             });
         }
 
-        // ระบบแปลง PDF ป้องกันหน้าเว็บขาว (เอาไว้ที่ z-index หลัง overlay ให้มันอยู่ในหน้าจอเสมอ)
+        // ระบบแปลง PDF ป้องกันหน้าเว็บขาว 100%
         function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
             const overlay = document.getElementById('loading-overlay');
-            // ทำพื้นหลังโหลดให้ขาวทึบ เพื่อไม่ให้เห็นตารางโผล่ขัดตา
             overlay.style.backgroundColor = '#ffffff'; 
             overlay.style.display = 'flex';
             
             window.scrollTo(0, 0); 
             
+            // ลบของเก่าออกเผื่อค้าง
+            const oldWrapper = document.getElementById('pdf-export-wrapper');
+            if (oldWrapper) document.body.removeChild(oldWrapper);
+
             const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
             
-            // กำหนดให้อยู่ในหน้าจอตลอด (fixed) ความกว้าง 1122px และซ่อนหลัง Loading Overlay (z-index 9998)
-            pdfWrapper.style.position = 'fixed';
+            // กำหนดความกว้าง 1122px (A4 Landscape) และให้อยู่ในหน้าจอ (ไม่ใช้ top: -10000px แล้ว เพราะอาจจะโดนตัดขาว)
+            // แต่ใช้การวางซ่อนไว้ด้านหลังสุด (z-index: -999) เพื่อให้แคปเจอร์ได้สมบูรณ์
+            pdfWrapper.style.position = 'absolute';
             pdfWrapper.style.top = '0';
             pdfWrapper.style.left = '0';
             pdfWrapper.style.width = '1122px'; 
-            pdfWrapper.style.zIndex = '9998'; 
+            pdfWrapper.style.minHeight = '794px';
+            pdfWrapper.style.zIndex = '-999'; 
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '20px';
             pdfWrapper.style.color = 'black';
@@ -1135,22 +1166,22 @@
             document.body.appendChild(pdfWrapper);
 
             const opt = {
-                margin: [0.3, 0.3, 0.3, 0.3], 
+                margin: [0.2, 0.2, 0.2, 0.2], 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
                 html2canvas: { scale: 2, useCORS: true, windowWidth: 1122, scrollX: 0, scrollY: 0 }, 
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
-            // หน่วงเวลา 0.5 วินาทีให้ตารางปรากฏตัวสมบูรณ์ก่อนถ่ายภาพ (แก้ปัญหาหน้าจอแหว่ง/ขาว 100%)
+            // หน่วงเวลาให้เบราว์เซอร์เตรียมภาพ (กันแหว่ง)
             setTimeout(() => {
                 html2pdf().set(opt).from(pdfWrapper).save().then(() => {
                     document.body.removeChild(pdfWrapper);
-                    overlay.style.backgroundColor = 'rgba(255,255,255,0.85)'; // คืนค่าเดิม
+                    overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
                     overlay.style.display = 'none';
                     Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
                 }).catch(err => {
-                    document.body.removeChild(pdfWrapper);
+                    if(document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
                     overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
                     overlay.style.display = 'none';
                     Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
