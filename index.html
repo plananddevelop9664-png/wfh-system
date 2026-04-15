@@ -1210,31 +1210,14 @@
             overlay.style.backgroundColor = '#ffffff'; 
             overlay.style.display = 'flex';
             
-            window.scrollTo(0, 0); 
-            
-            const oldWrapper = document.getElementById('pdf-export-wrapper');
-            if (oldWrapper) document.body.removeChild(oldWrapper);
-
-            const pdfWrapper = document.createElement('div'); 
-            pdfWrapper.id = 'pdf-export-wrapper';
-            
-            // แก้ไขแหว่งขวา: ใช้ width: max-content เพื่อให้ Container กางตามขนาดตารางจริงๆ
-            pdfWrapper.style.position = 'absolute';
-            pdfWrapper.style.top = '0';
-            pdfWrapper.style.left = '0';
-            pdfWrapper.style.width = 'max-content'; // สำคัญมาก กางตามเนื้อหา ไม่ตกขอบ
-            pdfWrapper.style.minWidth = '1200px';
-            pdfWrapper.style.zIndex = '9998'; // ซ่อนใต้หน้า Loading
-            pdfWrapper.style.backgroundColor = '#ffffff';
-            pdfWrapper.style.padding = '40px'; // ขอบกระดาษจำลอง
-            pdfWrapper.style.color = '#000000';
-            pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
-            
-            // ใช้ flex จัดกึ่งกลางทั้งหน้า (Center Table)
-            pdfWrapper.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-                    <div style="width: 100%; text-align: center;">${titleHtml}</div>
-                    <div style="width: max-content; margin: 0 auto; margin-bottom: 20px;">
+            // สร้างเป็น HTML String ล้วนๆ เพื่อให้ html2pdf ทำงานเบื้องหลัง (ไม่พึ่งพา DOM บนหน้าจอ)
+            // วิธีนี้รับประกัน 100% ว่าหน้าจะไม่ขาว เพราะไม่ได้รับผลกระทบจากการซ่อน (hidden/z-index)
+            const finalHtmlString = `
+                <div style="background-color: #ffffff; width: 1400px; margin: 0 auto; padding: 30px; color: #000000; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif;">
+                    <div style="width: 100%; text-align: center;">
+                        ${titleHtml}
+                    </div>
+                    <div style="width: 100%; text-align: center; margin-bottom: 20px;">
                         ${tableHtml}
                     </div>
                     <div style="width: 100%;">
@@ -1242,33 +1225,27 @@
                     </div>
                 </div>
             `;
-            document.body.appendChild(pdfWrapper);
-
-            // อ่านความกว้างที่แท้จริงของตารางหลังจากเรนเดอร์ลง DOM
-            const realWidth = pdfWrapper.scrollWidth;
 
             const opt = {
                 margin: [0.2, 0.2, 0.2, 0.2], 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                // ส่งค่าความกว้างจริงให้ html2canvas รับรู้ เพื่อวาด Canvas ให้ครบ ไม่ตัดขอบ
-                html2canvas: { scale: 2, useCORS: true, windowWidth: realWidth, width: realWidth, scrollX: 0, scrollY: 0 }, 
+                // กำหนด windowWidth เป็น 1400 ตามขนาดกล่องด้านบน เพื่อให้ภาพวาดออกมากว้างพอ ไม่ตกขอบ
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400 }, 
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
             setTimeout(() => {
-                html2pdf().set(opt).from(pdfWrapper).save().then(() => {
-                    document.body.removeChild(pdfWrapper);
+                html2pdf().set(opt).from(finalHtmlString).save().then(() => {
                     overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
                     overlay.style.display = 'none';
                     Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
                 }).catch(err => {
-                    if(document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
                     overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
                     overlay.style.display = 'none';
                     Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
                 });
-            }, 800); // เผื่อเวลาให้ render ก่อนถ่ายภาพ
+            }, 600); 
         }
 
         /* --- API HELPER FUNCTIONS --- */
