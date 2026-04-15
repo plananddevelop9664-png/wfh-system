@@ -7,7 +7,8 @@
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- เพิ่ม Font Sarabun สำหรับการ Export เอกสาร -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- Libraries สำหรับ Export PDF และ Excel -->
@@ -347,7 +348,7 @@
     <!-- Loading Overlay -->
     <div id="loading-overlay">
         <div class="spinner-border text-primary" role="status" style="width: 3.5rem; height: 3.5rem;"></div>
-        <h4 class="mt-3 text-primary fw-bold">กำลังประมวลผล...</h4>
+        <h4 class="mt-3 text-primary fw-bold">กำลังเตรียมเอกสาร...</h4>
     </div>
 
     <!-- Login Screen -->
@@ -937,7 +938,6 @@
                 html += `</tr>`;
             });
 
-            // แก้ไข: จำนวนพนักงานที่มาปฏิบัติงาน = จำนวนพนักงานทั้งหมด ลบด้วย จำนวนพนักงานที่ WFH ในวันนั้น
             html += `<tr class="summary-row"><td colspan="3" class="text-end">จำนวนพนักงานที่มาปฏิบัติงาน (ราย)</td>`;
             for(let i=1; i<=daysInMonth; i++) html += `<td>${totalEmp > 0 ? totalEmp - wfhCountPerDay[i] : 0}</td>`;
             html += `</tr>`;
@@ -955,7 +955,9 @@
             container.innerHTML = html;
         }
 
-        // ระบบ Preview & Export สำหรับ Excel (สร้างเป็นไฟล์ HTML แบบ MS Excel เพื่อรักษาเส้นตารางและ A4 Landscape)
+        // =========================================================
+        // โซน EXCEL EXPORT (บังคับตีเส้นขอบดำ 100% พร้อมลายเซ็น)
+        // =========================================================
         function previewExcel() {
             const tableContainer = document.getElementById("report-table-container");
             const sigContainer = document.getElementById("report-signature-section");
@@ -965,11 +967,28 @@
             const [y, m] = monthInput.split('-');
             const titleText = `ตารางกำหนดการปฏิบัติงาน (กรณี WFH) ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}`;
             const daysInMonth = new Date(parseInt(y), parseInt(m), 0).getDate();
-            const totalCols = daysInMonth + 3;
+            const totalCols = daysInMonth + 3; 
 
-            // ดึงข้อมูลตารางและลายเซ็น
+            // Clone Table เพื่อนำไปแก้โครงสร้าง CSS ภายใน
             const clonedTable = tableContainer.cloneNode(true);
             const tbl = clonedTable.querySelector('table');
+            
+            // สำคัญมากสำหรับ Excel: ต้องฝัง border="1" และ inline-style เข้าไปในทุก Tag
+            tbl.setAttribute('border', '1');
+            tbl.style.width = '100%'; 
+            tbl.style.borderCollapse = 'collapse';
+            tbl.style.fontFamily = "'TH SarabunPSK', 'Sarabun', sans-serif";
+
+            const allCells = tbl.querySelectorAll('th, td');
+            allCells.forEach(cell => { 
+                cell.style.border = '0.5pt solid black'; // เส้นตาราง Excel สีดำ 
+                cell.style.padding = '5px'; 
+                cell.style.fontSize = '14pt'; // ขนาดฟอนต์ MS Excel ปกติ 
+                cell.style.whiteSpace = 'nowrap'; 
+                cell.style.color = '#000000';
+                cell.style.backgroundColor = '#ffffff';
+                cell.style.fontFamily = "'TH SarabunPSK', 'Sarabun', sans-serif";
+            });
             
             const mName = document.getElementById('sig-manager-name').value || '......................................';
             const mPos = document.getElementById('sig-manager-position').value || 'ผู้บังคับบัญชา';
@@ -979,73 +998,121 @@
             const sPos = document.getElementById('sig-staff-position').value || 'ผู้ปฏิบัติงาน';
             const sDate = document.getElementById('sig-staff-date').value || '.........................';
 
-            // สร้างโครงร่าง HTML สำหรับเปิดใน MS Excel (รองรับการตีเส้นและ Landscape A4)
+            // เตรียมรูปภาพลายเซ็น (บังคับใช้ attribute width, height ไม่ใช้ CSS ล้วนๆ เพราะ Excel มองไม่เห็น)
+            const mImgPdf = document.getElementById('sig-manager-img');
+            const mImgTag = (mImgPdf.style.display !== 'none' && mImgPdf.src) ? `<img src="${mImgPdf.src}" width="100" height="50">` : `<br><br>`;
+            
+            const sImgPdf = document.getElementById('sig-staff-img');
+            const sImgTag = (sImgPdf.style.display !== 'none' && sImgPdf.src) ? `<img src="${sImgPdf.src}" width="100" height="50">` : `<br><br>`;
+
+            // โครงสร้างสำหรับแสดงพรีวิวบนหน้าจอ
+            const sigHtmlForPreview = `
+            <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 30px; font-family: 'Sarabun', sans-serif; font-size: 16px; background-color: #ffffff;">
+                <tr style="border: none;">
+                    <td style="width: 50%; text-align: center; border: none; color: #000;">
+                        ${mImgTag}<br><br>
+                        ลงชื่อ <b>${mName}</b><br>
+                        ตำแหน่ง ${mPos}<br>
+                        วันที่ ${mDate}
+                    </td>
+                    <td style="width: 50%; text-align: center; border: none; color: #000;">
+                        ${sImgTag}<br><br>
+                        ลงชื่อ <b>${sName}</b><br>
+                        ตำแหน่ง ${sPos}<br>
+                        วันที่ ${sDate}
+                    </td>
+                </tr>
+            </table>`;
+
+            // หน้าต่าง Preview ของ Excel พื้นหลังเขียวสไตล์ Excel
+            const previewHtml = `
+            <div style="background: #107c41; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
+                <div style="width: 1122px; min-width: 1122px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: left; color: black; font-family: 'Sarabun', sans-serif; box-sizing: border-box;">
+                    <h4 style="text-align: center; margin-bottom: 15px; color: #000; font-weight: bold; font-size: 20px;">${titleText}</h4>
+                    ${tbl.outerHTML}
+                    ${sigHtmlForPreview}
+                </div>
+            </div>`;
+
+            Swal.fire({
+                title: 'พรีวิวเอกสาร Excel',
+                html: previewHtml,
+                width: '95%',
+                showCancelButton: true,
+                confirmButtonColor: '#107c41',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-file-excel"></i> ยืนยันดาวน์โหลด Excel',
+                cancelButtonText: 'ปิดพรีวิว'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    generateAndDownloadExcel(titleText, tbl.outerHTML, totalCols, monthInput, mName, mPos, mDate, mImgTag, sName, sPos, sDate, sImgTag);
+                }
+            });
+        }
+
+        // ฟังก์ชันโหลดไฟล์ Excel
+        function generateAndDownloadExcel(titleText, tableOuterHtml, totalCols, monthInput, mName, mPos, mDate, mImgTag, sName, sPos, sDate, sImgTag) {
+            // คำนวณความกว้างคอลัมน์ลายเซ็นซ้าย/ขวา ให้สอดคล้องกับตารางหลัก
+            const leftColSpan = Math.floor(totalCols / 2);
+            const rightColSpan = totalCols - leftColSpan;
+            
             const excelHtml = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head>
                 <meta charset="utf-8">
                 <style>
                     @page { size: landscape; margin: 0.5in; }
-                    body { font-family: 'Tahoma', sans-serif; }
+                    body { font-family: 'TH SarabunPSK', 'Sarabun', sans-serif; }
+                    /* การบังคับ Table สำหรับ Excel ต้องชัดเจน */
                     table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid black; padding: 5px; text-align: center; font-size: 11px; white-space: nowrap; }
                     .no-border { border: none !important; }
-                    .title { font-size: 16px; font-weight: bold; border: none !important; text-align: center; }
-                    .sig-col { border: none !important; padding-top: 30px; text-align: center; }
+                    .title { font-size: 20px; font-weight: bold; border: none !important; text-align: center; }
+                    .sig-col { border: none !important; padding-top: 15px; text-align: center; vertical-align: bottom; }
                 </style>
             </head>
             <body>
                 <table>
                     <tr><td colspan="${totalCols}" class="title">${titleText}</td></tr>
-                    <tr><td colspan="${totalCols}" class="no-border" style="height: 20px;"></td></tr>
-                    ${tbl.innerHTML}
-                    <tr><td colspan="${totalCols}" class="no-border" style="height: 40px;"></td></tr>
+                    <tr><td colspan="${totalCols}" class="no-border" style="height: 15px;"></td></tr>
+                </table>
+                <!-- Table ข้อมูลหลักที่โดนตั้งค่า border ไว้แล้ว -->
+                ${tableOuterHtml}
+                <!-- Table ลายเซ็น -->
+                <table>
+                    <tr><td colspan="${totalCols}" class="no-border" style="height: 30px;"></td></tr>
                     <tr>
-                        <td colspan="3" class="no-border"></td>
-                        <td colspan="12" class="sig-col">ลงชื่อ <b>${mName}</b></td>
-                        <td colspan="6" class="no-border"></td>
-                        <td colspan="10" class="sig-col">ลงชื่อ <b>${sName}</b></td>
+                        <td colspan="${leftColSpan}" class="sig-col">${mImgTag}</td>
+                        <td colspan="${rightColSpan}" class="sig-col">${sImgTag}</td>
                     </tr>
                     <tr>
-                        <td colspan="3" class="no-border"></td>
-                        <td colspan="12" class="no-border" style="text-align:center;">ตำแหน่ง ${mPos}</td>
-                        <td colspan="6" class="no-border"></td>
-                        <td colspan="10" class="no-border" style="text-align:center;">ตำแหน่ง ${sPos}</td>
+                        <td colspan="${leftColSpan}" class="sig-col">ลงชื่อ <b>${mName}</b></td>
+                        <td colspan="${rightColSpan}" class="sig-col">ลงชื่อ <b>${sName}</b></td>
                     </tr>
                     <tr>
-                        <td colspan="3" class="no-border"></td>
-                        <td colspan="12" class="no-border" style="text-align:center;">วันที่ ${mDate}</td>
-                        <td colspan="6" class="no-border"></td>
-                        <td colspan="10" class="no-border" style="text-align:center;">วันที่ ${sDate}</td>
+                        <td colspan="${leftColSpan}" class="no-border" style="text-align:center;">ตำแหน่ง ${mPos}</td>
+                        <td colspan="${rightColSpan}" class="no-border" style="text-align:center;">ตำแหน่ง ${sPos}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="${leftColSpan}" class="no-border" style="text-align:center;">วันที่ ${mDate}</td>
+                        <td colspan="${rightColSpan}" class="no-border" style="text-align:center;">วันที่ ${sDate}</td>
                     </tr>
                 </table>
             </body>
             </html>`;
 
-            Swal.fire({
-                title: 'ยืนยันการดาวน์โหลด Excel',
-                text: "ข้อมูลตารางและลายเซ็นจะถูกจัดรูปแบบให้อยู่ในกระดาษ A4 แนวนอน พร้อมเส้นตารางแบบสมบูรณ์ค่ะ",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#20c997',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fas fa-file-excel"></i> ดาวน์โหลด Excel',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // สร้างไฟล์ MS Excel Format (.xls) เพื่อให้จำค่า CSS Borders และ Layout ได้
-                    const blob = new Blob(['\ufeff', excelHtml], { type: 'application/vnd.ms-excel' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `WFH_Report_${monthInput}.xls`; // เซฟเป็น .xls 
-                    a.click();
-                    URL.revokeObjectURL(url);
-                }
-            });
+            const blob = new Blob(['\ufeff', excelHtml], { type: 'application/vnd.ms-excel' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `WFH_Report_${monthInput}.xls`; 
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
-        // ระบบ Preview & Export สำหรับ PDF (จัดหน้า HTML จำลองกระดาษ A4 เพื่อแก้ปัญหาหน้าขาว 100%)
+
+        // =========================================================
+        // โซน PDF EXPORT (แก้หน้าขาว ตกขอบ จัดกึ่งกลาง)
+        // =========================================================
         function previewPDF() {
             const tableContainer = document.getElementById("report-table-container");
             const sigContainer = document.getElementById("report-signature-section");
@@ -1053,15 +1120,15 @@
             
             const monthInput = document.getElementById('report-month-picker').value;
             const [y, m] = monthInput.split('-');
-            const titleHtml = `<h4 style="text-align: center; margin-bottom: 15px; color: #333; font-weight: bold; font-family: 'Prompt', sans-serif;">ตารางกำหนดการปฏิบัติงาน (กรณี WFH) <br><small>ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</small></h4>`;
+            const titleHtml = `<h4 style="text-align: center; margin-bottom: 15px; color: #000; font-weight: bold; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; font-size: 22px;">ตารางกำหนดการปฏิบัติงาน (กรณี WFH) ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</h4>`;
 
             // ก๊อปปี้ตารางมาจัดรูปแบบสำหรับ PDF ไม่ให้ตกบรรทัด
             const clonedTable = tableContainer.cloneNode(true);
             const tbl = clonedTable.querySelector('table');
             if(tbl) { 
                 tbl.classList.remove('report-table');
-                tbl.style.width = 'max-content'; // ขยายตามเนื้อหาจริง ไม่ตกบรรทัด
-                tbl.style.margin = '0 auto'; // จัดให้อยู่กึ่งกลาง
+                tbl.style.width = 'max-content'; // บังคับให้ตารางกางเต็มที่ตามเนื้อหา (แก้แหว่ง)
+                tbl.style.margin = '0 auto'; // จัดตารางให้อยู่กึ่งกลาง
                 tbl.style.tableLayout = 'auto';
                 tbl.style.borderCollapse = 'collapse';
             }
@@ -1070,85 +1137,54 @@
             const allCells = clonedTable.querySelectorAll('th, td');
             allCells.forEach((cell) => { 
                 cell.style.position = 'static'; 
-                cell.style.fontSize = '10px'; // ขนาดฟอนต์สำหรับ PDF
-                cell.style.padding = '4px 2px';
-                cell.style.border = '1px solid #000'; // บังคับเส้นตารางสีดำ
+                cell.style.fontSize = '12px'; 
+                cell.style.padding = '4px 6px'; // เพิ่ม padding นิดหน่อยให้อ่านง่าย
+                cell.style.border = '1px solid #000'; 
                 cell.style.color = '#000';
                 cell.style.backgroundColor = '#fff';
-                // จัดการไม่ให้ตัดบรรทัด (nowrap) สำคัญมาก
-                cell.style.whiteSpace = 'nowrap';
+                cell.style.whiteSpace = 'nowrap'; // ห้ามตัดบรรทัดเด็ดขาด
+                cell.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
             });
             
-            const clonedSig = sigContainer.cloneNode(true);
-            clonedSig.style.display = 'flex';
-            clonedSig.style.flexDirection = 'row';
-            clonedSig.style.justifyContent = 'space-between';
-            clonedSig.style.alignItems = 'flex-start';
-            clonedSig.style.marginTop = '20px';
-            clonedSig.style.paddingTop = '20px';
-            clonedSig.style.borderTop = '1px dashed #ccc';
-            clonedSig.style.width = '100%';
+            // ใช้ string template สำหรับลายเซ็นแทนการ clone DOM เพื่อความเสถียรและจัด Layout ง่ายกว่า (ตามที่ผมเคยใช้และไม่บีบ)
+            const mName = document.getElementById('sig-manager-name').value || '......................................';
+            const mPos = document.getElementById('sig-manager-position').value || 'ผู้บังคับบัญชา';
+            const mDate = document.getElementById('sig-manager-date').value || '.........................';
+            const mImgPdf = document.getElementById('sig-manager-img');
+            const mImgTag = (mImgPdf.style.display !== 'none' && mImgPdf.src) ? `<img src="${mImgPdf.src}" style="max-height: 50px;">` : `<div style="height: 50px;"></div>`;
 
-            // Force both signature columns to be side-by-side with correct widths
-            const sigCols = clonedSig.querySelectorAll('[style*="width: 48%"]');
-            sigCols.forEach(col => {
-                col.style.width = '48%';
-                col.style.display = 'flex';
-                col.style.flexDirection = 'column';
-                col.style.alignItems = 'center';
-                col.style.textAlign = 'center';
-            });
+            const sName = document.getElementById('sig-staff-name').value || '......................................';
+            const sPos = document.getElementById('sig-staff-position').value || 'ผู้ปฏิบัติงาน';
+            const sDate = document.getElementById('sig-staff-date').value || '.........................';
+            const sImgPdf = document.getElementById('sig-staff-img');
+            const sImgTag = (sImgPdf.style.display !== 'none' && sImgPdf.src) ? `<img src="${sImgPdf.src}" style="max-height: 50px;">` : `<div style="height: 50px;"></div>`;
 
-            // Fix inner rows (name, position, date lines) to not wrap
-            const innerRows = clonedSig.querySelectorAll('.d-flex, [class*="d-flex"]');
-            innerRows.forEach(row => {
-                row.style.display = 'flex';
-                row.style.flexDirection = 'row';
-                row.style.alignItems = 'center';
-                row.style.justifyContent = 'center';
-                row.style.flexWrap = 'nowrap';
-                row.style.whiteSpace = 'nowrap';
-            });
-
-            // Force all text elements inside sig to not wrap
-            clonedSig.querySelectorAll('div, span, small').forEach(el => {
-                if (!el.querySelector('img') && !el.classList.contains('signature-upload')) {
-                    el.style.whiteSpace = 'nowrap';
-                }
-            });
+            const sigHtmlForPdf = `
+            <table style="width: 100%; max-width: 1000px; margin: 0 auto; border-collapse: collapse; border: none; margin-top: 40px; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; font-size: 16px; background-color: #ffffff;">
+                <tr style="border: none; background-color: #ffffff;">
+                    <td style="width: 50%; text-align: center; border: none; padding-top: 20px; background-color: #ffffff; color: #000;">
+                        ${mImgTag}<br><br>
+                        ( <b>${mName}</b> )<br>
+                        ตำแหน่ง ${mPos}<br>
+                        วันที่ ${mDate}
+                    </td>
+                    <td style="width: 50%; text-align: center; border: none; padding-top: 20px; background-color: #ffffff; color: #000;">
+                        ${sImgTag}<br><br>
+                        ( <b>${sName}</b> )<br>
+                        ตำแหน่ง ${sPos}<br>
+                        วันที่ ${sDate}
+                    </td>
+                </tr>
+            </table>`;
             
-            const origInputs = sigContainer.querySelectorAll('input[type="text"]');
-            const cloneInputs = clonedSig.querySelectorAll('input[type="text"]');
-            origInputs.forEach((input, idx) => {
-                const span = document.createElement('span');
-                span.innerText = input.value || '......................................';
-                if(input.id.includes('position')) { span.style.borderBottom = 'none'; } 
-                else { span.style.borderBottom = '1px dotted #000'; }
-                span.style.padding = '0 10px'; span.style.display = 'inline-block'; 
-                span.style.whiteSpace = 'nowrap'; span.style.fontWeight = 'bold';
-                cloneInputs[idx].parentNode.replaceChild(span, cloneInputs[idx]);
-            });
-
-            const cloneUploads = clonedSig.querySelectorAll('.signature-upload');
-            cloneUploads.forEach(u => { u.style.border = 'none'; u.style.background = 'transparent'; u.style.height = 'auto'; u.style.minHeight = '70px'; });
-            const clonePlaceholders = clonedSig.querySelectorAll('span[id$="-placeholder"]');
-            clonePlaceholders.forEach(p => p.style.display = 'none');
-            
-            const origImgs = sigContainer.querySelectorAll('img');
-            const cloneImgs = clonedSig.querySelectorAll('img');
-            origImgs.forEach((img, idx) => {
-                cloneImgs[idx].src = img.src;
-                if(img.src) cloneImgs[idx].style.display = 'inline-block';
-            });
-            
-            // สร้างกระดาษจำลองขนาดให้กว้างขึ้นเพื่อรองรับ 31 วันไม่ให้ตกขอบ (1500px)
+            // หน้าต่าง Preview พื้นหลังเทาดำ
             const previewHtml = `<div style="background: #525659; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
-                <div style="width: 1500px; min-width: 1500px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: center; color: black; font-family: 'Prompt', sans-serif; box-sizing: border-box;">
+                <div style="width: max-content; min-width: 1200px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: center; color: black; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; box-sizing: border-box;">
                     ${titleHtml}
                     <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 20px;">
                         ${tbl.outerHTML}
                     </div>
-                    ${clonedSig.outerHTML}
+                    ${sigHtmlForPdf}
                 </div>
             </div>`;
 
@@ -1163,13 +1199,12 @@
                 cancelButtonText: 'ปิดพรีวิว'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // ส่ง tbl.outerHTML แทน clonedTable.outerHTML เพื่อตัดปัญหา overflow: auto ตัดแหว่งขวา
-                    generateAndDownloadPDF(titleHtml, tbl.outerHTML, clonedSig.outerHTML, monthInput);
+                    generateAndDownloadPDF(titleHtml, tbl.outerHTML, sigHtmlForPdf, monthInput);
                 }
             });
         }
 
-        // ระบบแปลง PDF ป้องกันหน้าเว็บขาว 100%
+        // ระบบแปลง PDF ป้องกันหน้าเว็บขาวและขอบแหว่ง 100%
         function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
             const overlay = document.getElementById('loading-overlay');
             overlay.style.backgroundColor = '#ffffff'; 
@@ -1177,47 +1212,50 @@
             
             window.scrollTo(0, 0); 
             
-            // ลบของเก่าออกเผื่อค้าง
             const oldWrapper = document.getElementById('pdf-export-wrapper');
             if (oldWrapper) document.body.removeChild(oldWrapper);
 
             const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
             
-            // ขยายเป็น 1500px เพื่อไม่ให้โดนตัดขวา
-            pdfWrapper.style.position = 'fixed';
+            // แก้ไขแหว่งขวา: ใช้ width: max-content เพื่อให้ Container กางตามขนาดตารางจริงๆ
+            pdfWrapper.style.position = 'absolute';
             pdfWrapper.style.top = '0';
-            pdfWrapper.style.left = '-9999px';
-            pdfWrapper.style.width = '1500px'; 
-            pdfWrapper.style.minHeight = '794px';
-            pdfWrapper.style.zIndex = '9999';
+            pdfWrapper.style.left = '0';
+            pdfWrapper.style.width = 'max-content'; // สำคัญมาก กางตามเนื้อหา ไม่ตกขอบ
+            pdfWrapper.style.minWidth = '1200px';
+            pdfWrapper.style.zIndex = '9998'; // ซ่อนใต้หน้า Loading
             pdfWrapper.style.backgroundColor = '#ffffff';
-            pdfWrapper.style.padding = '20px';
-            pdfWrapper.style.color = 'black';
-            pdfWrapper.style.fontFamily = "'Prompt', sans-serif";
+            pdfWrapper.style.padding = '40px'; // ขอบกระดาษจำลอง
+            pdfWrapper.style.color = '#000000';
+            pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
             
-            // เพิ่ม <div style="text-align: center;"> และห่อ tableHtml ด้วย flex เพื่อให้อยู่ตรงกลาง
+            // ใช้ flex จัดกึ่งกลางทั้งหน้า (Center Table)
             pdfWrapper.innerHTML = `
-                <div style="text-align: center;">
-                    ${titleHtml}
-                    <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 20px;">
+                <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                    <div style="width: 100%; text-align: center;">${titleHtml}</div>
+                    <div style="width: max-content; margin: 0 auto; margin-bottom: 20px;">
                         ${tableHtml}
                     </div>
-                    ${sigHtml}
+                    <div style="width: 100%;">
+                        ${sigHtml}
+                    </div>
                 </div>
             `;
             document.body.appendChild(pdfWrapper);
+
+            // อ่านความกว้างที่แท้จริงของตารางหลังจากเรนเดอร์ลง DOM
+            const realWidth = pdfWrapper.scrollWidth;
 
             const opt = {
                 margin: [0.2, 0.2, 0.2, 0.2], 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                // เพิ่ม windowWidth ให้ตรงกับความกว้างใหม่
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1500, scrollX: 0, scrollY: 0 }, 
+                // ส่งค่าความกว้างจริงให้ html2canvas รับรู้ เพื่อวาด Canvas ให้ครบ ไม่ตัดขอบ
+                html2canvas: { scale: 2, useCORS: true, windowWidth: realWidth, width: realWidth, scrollX: 0, scrollY: 0 }, 
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
-            // หน่วงเวลาให้เบราว์เซอร์เตรียมภาพ (กันแหว่ง)
             setTimeout(() => {
                 html2pdf().set(opt).from(pdfWrapper).save().then(() => {
                     document.body.removeChild(pdfWrapper);
@@ -1230,7 +1268,7 @@
                     overlay.style.display = 'none';
                     Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
                 });
-            }, 500); 
+            }, 800); // เผื่อเวลาให้ render ก่อนถ่ายภาพ
         }
 
         /* --- API HELPER FUNCTIONS --- */
