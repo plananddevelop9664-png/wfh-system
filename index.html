@@ -637,7 +637,7 @@
         let currentView = 'view-calendar';
         let reportDataStore = [];
 
-        const thMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        const thMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรดฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
         const daysOfWeek = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
         
         let wfhModal;
@@ -1127,23 +1127,26 @@
             const tbl = clonedTable.querySelector('table');
             if(tbl) { 
                 tbl.classList.remove('report-table');
-                tbl.style.width = 'max-content'; // บังคับให้ตารางกางเต็มที่ตามเนื้อหา (แก้แหว่ง)
-                tbl.style.margin = '0 auto'; // จัดตารางให้อยู่กึ่งกลาง
+                tbl.style.width = '100%'; // <--- บังคับกว้าง 100% พอดีกระดาษ เพื่อไม่ให้ตารางแหว่งขวา
                 tbl.style.tableLayout = 'auto';
                 tbl.style.borderCollapse = 'collapse';
+                tbl.style.marginBottom = '20px';
             }
             
-            // ตั้งค่า CSS ไม่ให้ชื่อหรือตำแหน่งตกบรรทัด
-            const allCells = clonedTable.querySelectorAll('th, td');
+            // ตั้งค่า CSS ไม่ให้ชื่อหรือตำแหน่งตกบรรทัด และให้กางครบ 31 วัน
+            const allCells = tbl.querySelectorAll('th, td');
             allCells.forEach((cell) => { 
+                const existingColor = cell.style.color;
                 cell.style.position = 'static'; 
-                cell.style.fontSize = '12px'; 
-                cell.style.padding = '4px 6px'; // เพิ่ม padding นิดหน่อยให้อ่านง่าย
+                cell.style.fontSize = '10.5px'; // <--- ปรับขนาดฟอนต์ลงเล็กน้อยเพื่อรับประกันว่า 31 วันจะเข้าได้พอดี
+                cell.style.padding = '4px 2px'; // <--- ลด padding ซ้ายขวาลงให้ตารางไม่กางเกินไป
                 cell.style.border = '1px solid #000'; 
-                cell.style.color = '#000';
-                cell.style.backgroundColor = '#fff';
+                cell.style.backgroundColor = '#ffffff';
                 cell.style.whiteSpace = 'nowrap'; // ห้ามตัดบรรทัดเด็ดขาด
                 cell.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
+                if (!existingColor) {
+                    cell.style.color = '#000000';
+                }
             });
             
             // ใช้ string template สำหรับลายเซ็นแทนการ clone DOM เพื่อความเสถียรและจัด Layout ง่ายกว่า (ตามที่ผมเคยใช้และไม่บีบ)
@@ -1160,7 +1163,7 @@
             const sImgTag = (sImgPdf.style.display !== 'none' && sImgPdf.src) ? `<img src="${sImgPdf.src}" style="max-height: 50px;">` : `<div style="height: 50px;"></div>`;
 
             const sigHtmlForPdf = `
-            <table style="width: 100%; max-width: 1000px; margin: 0 auto; border-collapse: collapse; border: none; margin-top: 40px; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; font-size: 16px; background-color: #ffffff;">
+            <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 40px; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; font-size: 16px; background-color: #ffffff;">
                 <tr style="border: none; background-color: #ffffff;">
                     <td style="width: 50%; text-align: center; border: none; padding-top: 20px; background-color: #ffffff; color: #000;">
                         ${mImgTag}<br><br>
@@ -1177,14 +1180,18 @@
                 </tr>
             </table>`;
             
-            // หน้าต่าง Preview พื้นหลังเทาดำ
+            // หน้าต่าง Preview พื้นหลังเทาดำ ขนาดพอดี A4 แนวนอน 1122px
             const previewHtml = `<div style="background: #525659; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
-                <div style="width: max-content; min-width: 1200px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: center; color: black; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; box-sizing: border-box;">
-                    ${titleHtml}
-                    <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 20px;">
+                <div style="width: 1122px; min-width: 1122px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: left; color: black; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; box-sizing: border-box;">
+                    <div style="width: 100%; text-align: center;">
+                        ${titleHtml}
+                    </div>
+                    <div style="width: 100%; margin-bottom: 20px;">
                         ${tbl.outerHTML}
                     </div>
-                    ${sigHtmlForPdf}
+                    <div style="width: 100%;">
+                        ${sigHtmlForPdf}
+                    </div>
                 </div>
             </div>`;
 
@@ -1210,14 +1217,14 @@
             overlay.style.backgroundColor = '#ffffff'; 
             overlay.style.display = 'flex';
             
-            // สร้างเป็น HTML String ล้วนๆ เพื่อให้ html2pdf ทำงานเบื้องหลัง (ไม่พึ่งพา DOM บนหน้าจอ)
-            // วิธีนี้รับประกัน 100% ว่าหน้าจะไม่ขาว เพราะไม่ได้รับผลกระทบจากการซ่อน (hidden/z-index)
+            // สร้างเป็น HTML String ล้วนๆ เพื่อให้ html2pdf ทำงานเบื้องหลัง 
+            // 1122px คือความกว้างมาตรฐาน A4 แนวนอน (96dpi) รับประกันว่าไม่แหว่ง ไม่โย้ไปขวา
             const finalHtmlString = `
-                <div style="background-color: #ffffff; width: 1400px; margin: 0 auto; padding: 30px; color: #000000; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif;">
+                <div style="background-color: #ffffff; width: 1122px; padding: 30px; box-sizing: border-box; color: #000000; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif;">
                     <div style="width: 100%; text-align: center;">
                         ${titleHtml}
                     </div>
-                    <div style="width: 100%; text-align: center; margin-bottom: 20px;">
+                    <div style="width: 100%; margin-bottom: 20px;">
                         ${tableHtml}
                     </div>
                     <div style="width: 100%;">
@@ -1230,8 +1237,7 @@
                 margin: [0.2, 0.2, 0.2, 0.2], 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                // กำหนด windowWidth เป็น 1400 ตามขนาดกล่องด้านบน เพื่อให้ภาพวาดออกมากว้างพอ ไม่ตกขอบ
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400 }, 
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1122 }, // บังคับ windowWidth ให้พอดี A4
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
