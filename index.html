@@ -1127,7 +1127,8 @@
             const tbl = clonedTable.querySelector('table');
             if(tbl) { 
                 tbl.classList.remove('report-table');
-                tbl.style.width = '100%'; // <--- บังคับกว้าง 100% พอดีกระดาษ เพื่อไม่ให้ตารางแหว่งขวา
+                tbl.style.width = '100%'; 
+                tbl.style.margin = '0 auto'; // จัดตารางให้อยู่กึ่งกลาง
                 tbl.style.tableLayout = 'auto';
                 tbl.style.borderCollapse = 'collapse';
                 tbl.style.marginBottom = '20px';
@@ -1138,8 +1139,8 @@
             allCells.forEach((cell) => { 
                 const existingColor = cell.style.color;
                 cell.style.position = 'static'; 
-                cell.style.fontSize = '10.5px'; // <--- ปรับขนาดฟอนต์ลงเล็กน้อยเพื่อรับประกันว่า 31 วันจะเข้าได้พอดี
-                cell.style.padding = '4px 2px'; // <--- ลด padding ซ้ายขวาลงให้ตารางไม่กางเกินไป
+                cell.style.fontSize = '11px'; // ปรับฟอนต์ให้พอดี 
+                cell.style.padding = '4px 2px'; 
                 cell.style.border = '1px solid #000'; 
                 cell.style.backgroundColor = '#ffffff';
                 cell.style.whiteSpace = 'nowrap'; // ห้ามตัดบรรทัดเด็ดขาด
@@ -1180,13 +1181,13 @@
                 </tr>
             </table>`;
             
-            // หน้าต่าง Preview พื้นหลังเทาดำ ขนาดพอดี A4 แนวนอน 1122px
+            // หน้าต่าง Preview พื้นหลังเทาดำ ขยายขนาดเป็น 1350px เพื่อกางตาราง 31 วันให้ครบ
             const previewHtml = `<div style="background: #525659; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
-                <div style="width: 1122px; min-width: 1122px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: left; color: black; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; box-sizing: border-box;">
+                <div style="width: 1350px; min-width: 1350px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); margin: 0 auto; text-align: center; color: black; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; box-sizing: border-box;">
                     <div style="width: 100%; text-align: center;">
                         ${titleHtml}
                     </div>
-                    <div style="width: 100%; margin-bottom: 20px;">
+                    <div style="width: 100%; margin-bottom: 20px; display: flex; justify-content: center;">
                         ${tbl.outerHTML}
                     </div>
                     <div style="width: 100%;">
@@ -1218,13 +1219,13 @@
             overlay.style.display = 'flex';
             
             // สร้างเป็น HTML String ล้วนๆ เพื่อให้ html2pdf ทำงานเบื้องหลัง 
-            // 1122px คือความกว้างมาตรฐาน A4 แนวนอน (96dpi) รับประกันว่าไม่แหว่ง ไม่โย้ไปขวา
+            // 1350px คือความกว้างที่เพียงพอต่อ 31 วัน ช่วยดึง margin เข้าสู่กึ่งกลางและไม่ตัดแหว่ง
             const finalHtmlString = `
-                <div style="background-color: #ffffff; width: 1122px; padding: 30px; box-sizing: border-box; color: #000000; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif;">
+                <div style="background-color: #ffffff; width: 1350px; padding: 30px; margin: 0 auto; box-sizing: border-box; color: #000000; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif;">
                     <div style="width: 100%; text-align: center;">
                         ${titleHtml}
                     </div>
-                    <div style="width: 100%; margin-bottom: 20px;">
+                    <div style="width: 100%; margin-bottom: 20px; display: flex; justify-content: center;">
                         ${tableHtml}
                     </div>
                     <div style="width: 100%;">
@@ -1237,7 +1238,7 @@
                 margin: [0.2, 0.2, 0.2, 0.2], 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1122 }, // บังคับ windowWidth ให้พอดี A4
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1350 }, // ขยาย windowWidth มารองรับตารางที่ยาวขึ้น
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
