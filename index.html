@@ -1207,22 +1207,21 @@
                 cancelButtonText: 'ปิดพรีวิว'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    generateAndDownloadPDF(titleHtml, tbl.outerHTML, sigHtmlForPdf, monthInput);
+                    const overlay = document.getElementById('loading-overlay');
+                    overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
+                    overlay.style.display = 'flex';
+                    
+                    // หน่วงเวลา 500ms ให้ SweetAlert ปิดตัวลงและคืนค่าระบบหน้าจอให้เป็นปกติก่อน
+                    setTimeout(() => {
+                        generateAndDownloadPDF(titleHtml, tbl.outerHTML, sigHtmlForPdf, monthInput);
+                    }, 500);
                 }
             });
         }
 
-        // ฟังก์ชัน Export PDF - แก้บัคหน้าขาว 100% (ดันเลเยอร์ขึ้นบนสุดกันโดนบัง)
+        // ฟังก์ชัน Export PDF 
         function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
-            // โชว์แค่ Loading ของ Sweetalert (ไม่ใช้ overlay สีขาวทึบของเดิมแล้ว)
-            Swal.fire({
-                title: 'กำลังสร้างไฟล์ PDF',
-                text: 'กรุณารอสักครู่ (ห้ามปิดหน้าจอ)...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+            const overlay = document.getElementById('loading-overlay');
             
             const oldWrapper = document.getElementById('pdf-export-wrapper');
             if (oldWrapper) document.body.removeChild(oldWrapper);
@@ -1230,14 +1229,12 @@
             const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
             
-            // ยกกระดาษขึ้นมาวางทับทุกอย่างบนหน้าจอ (z-index 9999999 สูงกว่าทุกสิ่ง)
-            // เพื่อบังคับให้กล้องถ่ายติด 100% (คุณจะเห็นมันโผล่มาแวบนึงแล้วหายไป)
+            // ซ่อนไว้ด้านหลังสุด (z-index: -1) เพื่อไม่ให้รบกวนหน้าจอ แต่ html2canvas ยังมองเห็นและแคปเจอร์ได้สมบูรณ์
             pdfWrapper.style.position = 'absolute';
             pdfWrapper.style.top = '0';
             pdfWrapper.style.left = '0';
-            pdfWrapper.style.width = '794px'; 
-            pdfWrapper.style.minHeight = '1123px';
-            pdfWrapper.style.zIndex = '9999999'; 
+            pdfWrapper.style.width = '800px'; 
+            pdfWrapper.style.zIndex = '-1'; 
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '40px'; 
             pdfWrapper.style.boxSizing = 'border-box';
@@ -1256,28 +1253,24 @@
                 </div>
             `;
             document.body.appendChild(pdfWrapper);
-            
-            // บังคับ Scroll ไปซ้ายบนสุดให้กล้องถ่ายตรงจุดเป๊ะๆ
-            window.scrollTo(0, 0);
 
             const opt = {
-                margin: 0, 
+                margin: 0.3, 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 794, width: 794, scrollX: 0, scrollY: 0 }, 
-                jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+                html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
 
-            // ให้เวลาเบราว์เซอร์วาดตาราง 1 วินาทีเต็ม แล้วค่อยกดชัตเตอร์ถ่ายรูป (หนีอาการหน้าขาว)
-            setTimeout(() => {
-                html2pdf().set(opt).from(pdfWrapper).save().then(() => {
-                    if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-                    Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
-                }).catch(err => {
-                    if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-                    Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
-                });
-            }, 1000); 
+            html2pdf().set(opt).from(pdfWrapper).save().then(() => {
+                if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+                overlay.style.display = 'none';
+                Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
+            }).catch(err => {
+                if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+                overlay.style.display = 'none';
+                Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
+            });
         }
 
         /* --- API HELPER FUNCTIONS --- */
