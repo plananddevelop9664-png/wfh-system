@@ -1126,11 +1126,9 @@
             
             if(tbl) { 
                 tbl.classList.remove('report-table');
-                tbl.style.width = 'max-content'; // บังคับให้กางตามเนื้อหา ป้องกันโดนบีบจนแหว่ง
-                tbl.style.margin = '0 auto'; 
+                tbl.style.width = '100%'; // บังคับให้กาง 100% ภายใน Wrapper ที่เราสร้าง
                 tbl.style.tableLayout = 'auto';
                 tbl.style.borderCollapse = 'collapse';
-                tbl.style.marginBottom = '20px';
             }
             
             // ตั้งค่า CSS ให้กับตาราง (บังคับพื้นหลังขาว เส้นดำ ฟอนต์ Sarabun)
@@ -1138,13 +1136,13 @@
             allCells.forEach((cell) => { 
                 const existingColor = cell.style.color; // เก็บสีเดิมไว้ เช่น เครื่องหมายถูกสีเขียว
                 cell.style.position = 'static'; // ลบ sticky ป้องกันบัคคอลัมน์แรกหาย
-                cell.style.left = 'auto'; 
+                cell.style.left = 'auto'; // คืนค่าคอลัมน์ซ้ายสุดที่ถูกล็อคไว้ 
                 cell.style.zIndex = 'auto';
-                cell.style.fontSize = '9.5px'; // *** บีบฟอนต์ให้เล็กลงเพื่อให้ตาราง 31 วันพอดีกระดาษ
-                cell.style.padding = '4px 3px'; // *** บีบช่องไฟเล็กน้อยเพื่อความสมดุล
+                cell.style.fontSize = '11px'; 
+                cell.style.padding = '4px 2px';
                 cell.style.border = '1px solid #000'; 
                 cell.style.backgroundColor = '#ffffff';
-                cell.style.whiteSpace = 'nowrap';
+                cell.style.whiteSpace = 'nowrap'; // ป้องกันการตัดบรรทัดในตาราง
                 cell.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
                 if (!existingColor) {
                     cell.style.color = '#000000';
@@ -1165,7 +1163,7 @@
             const sImgTag = (sImgPdf.style.display !== 'none' && sImgPdf.src) ? `<img src="${sImgPdf.src}" style="max-height: 50px;">` : `<div style="height: 50px;"></div>`;
 
             const sigHtmlForPdf = `
-            <table style="width: 100%; max-width: 1000px; margin: 0 auto; border-collapse: collapse; border: none; margin-top: 40px; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; font-size: 14px; background-color: #ffffff;">
+            <table style="width: 100%; max-width: 1000px; margin: 0 auto; border-collapse: collapse; border: none; font-family: 'Sarabun', 'TH SarabunPSK', sans-serif; font-size: 16px; background-color: #ffffff;">
                 <tr style="border: none; background-color: #ffffff;">
                     <td style="width: 50%; text-align: center; border: none; padding-top: 20px; background-color: #ffffff; color: #000;">
                         ${mImgTag}<br><br>
@@ -1182,19 +1180,19 @@
                 </tr>
             </table>`;
             
-            // หน้าต่าง Preview ใช้ display: flex แต่อยู่กึ่งกลางสมบูรณ์
+            // หน้าต่าง Preview ปรับเป็น 1400px ให้เห็นเต็มๆ ไม่มีแหว่ง
             const previewHtml = `<div style="background: #525659; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
-                <div style="width: max-content; min-width: 1122px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: center; color: black; font-family: 'Sarabun', sans-serif; box-sizing: border-box;">
+                <div style="width: 1400px; min-width: 1400px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); box-sizing: border-box;">
                     <div style="width: 100%; text-align: center; margin-bottom: 20px;">
                         ${titleHtml}
                     </div>
-                    <div style="width: 100%; text-align: center; margin-bottom: 20px;">
-                        <div style="display: inline-block; margin: 0 auto;">
+                    <div style="width: 100%; display: flex; justify-content: center; margin-bottom: 30px;">
+                        <div style="width: 100%;">
                             ${tbl.outerHTML}
                         </div>
                     </div>
-                    <div style="width: 100%; text-align: center;">
-                        <div style="display: inline-block; width: 100%; max-width: 1000px; margin: 0 auto;">
+                    <div style="width: 100%; display: flex; justify-content: center;">
+                        <div style="width: 100%; max-width: 1000px;">
                             ${sigHtmlForPdf}
                         </div>
                     </div>
@@ -1231,12 +1229,12 @@
             const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
             
-            // กางความกว้างตามเนื้อหา max-content ป้องกันโปรแกรมตัดแหว่ง
+            // สร้าง Wrapper จำลองขนาด 1400px และบังคับให้เห็นเพื่อให้ html2canvas เรนเดอร์ได้ 100%
             pdfWrapper.style.position = 'absolute';
             pdfWrapper.style.top = '0';
             pdfWrapper.style.left = '0';
-            pdfWrapper.style.width = 'max-content'; 
-            pdfWrapper.style.minWidth = '1122px'; 
+            pdfWrapper.style.width = '1400px'; 
+            pdfWrapper.style.minHeight = '100vh';
             pdfWrapper.style.zIndex = '9998'; 
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '40px'; 
@@ -1244,49 +1242,50 @@
             pdfWrapper.style.color = '#000000';
             pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
             
-            // จัดการ Layout กึ่งกลางที่ปลอดภัย (เลี่ยง flex ที่มักจะล้นใน html2canvas)
+            // จัดการ Layout ให้กึ่งกลางสมบูรณ์และไม่แหว่ง 
             pdfWrapper.innerHTML = `
                 <div style="width: 100%; text-align: center; margin-bottom: 20px;">
                     ${titleHtml}
                 </div>
-                <div style="width: 100%; text-align: center; margin-bottom: 20px;">
-                    <div style="display: inline-block; margin: 0 auto;">
+                <div style="width: 100%; display: flex; justify-content: center; margin-bottom: 30px;">
+                    <div style="width: 100%;">
                         ${tableHtml}
                     </div>
                 </div>
-                <div style="width: 100%; text-align: center;">
-                    <div style="display: inline-block; width: 100%; max-width: 1000px; margin: 0 auto;">
+                <div style="width: 100%; display: flex; justify-content: center;">
+                    <div style="width: 100%; max-width: 1000px;">
                         ${sigHtml}
                     </div>
                 </div>
             `;
             document.body.appendChild(pdfWrapper);
 
-            // ดึงความกว้างจริงของหน้าจอทั้งหมดมาเป็นตัวกำหนดขนาด Canvas
-            const actualWidth = pdfWrapper.scrollWidth;
-
             const opt = {
-                margin: [0.2, 0.2, 0.2, 0.2], 
+                margin: 0.2, 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                // บังคับ x: 0 และ y: 0 เพื่อให้แคปเจอร์จากมุมซ้ายบนเป๊ะๆ + ใช้ actualWidth 
-                html2canvas: { scale: 2, useCORS: true, windowWidth: actualWidth, width: actualWidth, scrollX: 0, scrollY: 0, x: 0, y: 0 }, 
+                // บังคับความกว้าง html2canvas ให้เท่ากับ Wrapper ที่ 1400 เพื่อไม่ให้โดนตัดขอบ
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400, scrollX: 0, scrollY: 0 }, 
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
             setTimeout(() => {
                 html2pdf().set(opt).from(pdfWrapper).save().then(() => {
-                    document.body.removeChild(pdfWrapper);
+                    if (document.body.contains(pdfWrapper)) {
+                        document.body.removeChild(pdfWrapper);
+                    }
                     overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
                     overlay.style.display = 'none';
                     Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
                 }).catch(err => {
-                    if(document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+                    if (document.body.contains(pdfWrapper)) {
+                        document.body.removeChild(pdfWrapper);
+                    }
                     overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
                     overlay.style.display = 'none';
                     Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
                 });
-            }, 800); 
+            }, 500); 
         }
 
         /* --- API HELPER FUNCTIONS --- */
