@@ -1081,9 +1081,41 @@
             
             const clonedSig = sigContainer.cloneNode(true);
             clonedSig.style.display = 'flex';
+            clonedSig.style.flexDirection = 'row';
+            clonedSig.style.justifyContent = 'space-between';
+            clonedSig.style.alignItems = 'flex-start';
             clonedSig.style.marginTop = '20px';
             clonedSig.style.paddingTop = '20px';
             clonedSig.style.borderTop = '1px dashed #ccc';
+            clonedSig.style.width = '100%';
+
+            // Force both signature columns to be side-by-side with correct widths
+            const sigCols = clonedSig.querySelectorAll('[style*="width: 48%"]');
+            sigCols.forEach(col => {
+                col.style.width = '48%';
+                col.style.display = 'flex';
+                col.style.flexDirection = 'column';
+                col.style.alignItems = 'center';
+                col.style.textAlign = 'center';
+            });
+
+            // Fix inner rows (name, position, date lines) to not wrap
+            const innerRows = clonedSig.querySelectorAll('.d-flex, [class*="d-flex"]');
+            innerRows.forEach(row => {
+                row.style.display = 'flex';
+                row.style.flexDirection = 'row';
+                row.style.alignItems = 'center';
+                row.style.justifyContent = 'center';
+                row.style.flexWrap = 'nowrap';
+                row.style.whiteSpace = 'nowrap';
+            });
+
+            // Force all text elements inside sig to not wrap
+            clonedSig.querySelectorAll('div, span, small').forEach(el => {
+                if (!el.querySelector('img') && !el.classList.contains('signature-upload')) {
+                    el.style.whiteSpace = 'nowrap';
+                }
+            });
             
             const origInputs = sigContainer.querySelectorAll('input[type="text"]');
             const cloneInputs = clonedSig.querySelectorAll('input[type="text"]');
@@ -1151,12 +1183,12 @@
             
             // กำหนดความกว้าง 1122px (A4 Landscape) และให้อยู่ในหน้าจอ (ไม่ใช้ top: -10000px แล้ว เพราะอาจจะโดนตัดขาว)
             // แต่ใช้การวางซ่อนไว้ด้านหลังสุด (z-index: -999) เพื่อให้แคปเจอร์ได้สมบูรณ์
-            pdfWrapper.style.position = 'absolute';
+            pdfWrapper.style.position = 'fixed';
             pdfWrapper.style.top = '0';
-            pdfWrapper.style.left = '0';
+            pdfWrapper.style.left = '-9999px';
             pdfWrapper.style.width = '1122px'; 
             pdfWrapper.style.minHeight = '794px';
-            pdfWrapper.style.zIndex = '-999'; 
+            pdfWrapper.style.zIndex = '9999';
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '20px';
             pdfWrapper.style.color = 'black';
