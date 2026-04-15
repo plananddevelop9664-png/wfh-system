@@ -1221,9 +1221,6 @@
             overlay.style.backgroundColor = '#ffffff'; 
             overlay.style.display = 'flex';
             
-            // 1. ซ่อน UI หลักทั้งหมดชั่วคราว เพื่อให้เหลือแค่หน้ากระดาษ PDF เพียวๆ ป้องกันการเรนเดอร์เพี้ยนหน้าขาว
-            const appContainer = document.getElementById('app-container');
-            appContainer.style.display = 'none';
             window.scrollTo(0, 0); 
             
             const oldWrapper = document.getElementById('pdf-export-wrapper');
@@ -1232,17 +1229,21 @@
             const pdfWrapper = document.createElement('div'); 
             pdfWrapper.id = 'pdf-export-wrapper';
             
-            // 2. ให้แสดงผลแบบปกติบนหน้าจอชั่วคราว (ทับด้วย Loading) ป้องกันการโดนตัดขอบ 100%
-            pdfWrapper.style.position = 'relative';
-            pdfWrapper.style.width = '1400px'; // กางตารางให้เต็ม 1400px เพียงพอสำหรับ 31 วันชัวร์ๆ
-            pdfWrapper.style.margin = '0 auto'; 
+            // ยกเลิกการซ่อน app-container เพื่อไม่ให้เกิดหน้าขาว
+            // ใช้ position: absolute ทับที่พิกัด 0,0 ภายใต้ z-index 9998
+            pdfWrapper.style.position = 'absolute';
+            pdfWrapper.style.top = '0';
+            pdfWrapper.style.left = '0';
+            pdfWrapper.style.width = '1400px'; 
+            pdfWrapper.style.minHeight = '100vh';
+            pdfWrapper.style.zIndex = '9998'; 
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '40px'; 
             pdfWrapper.style.boxSizing = 'border-box';
             pdfWrapper.style.color = '#000000';
             pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
             
-            // จัด Layout กึ่งกลางที่ปลอดภัย
+            // จัด Layout ให้กึ่งกลางสมบูรณ์และไม่แหว่ง 
             pdfWrapper.innerHTML = `
                 <div style="width: 100%; text-align: center; margin-bottom: 20px;">
                     ${titleHtml}
@@ -1264,18 +1265,16 @@
                 margin: 0.2, 
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
-                // บังคับความกว้าง html2canvas ให้เท่ากับ Wrapper ที่ 1400 พอดีเป๊ะ
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400, scrollX: 0, scrollY: 0 }, 
+                // บังคับความกว้าง html2canvas ให้เท่ากับ Wrapper ที่ 1400 พอดีเป๊ะ ไม่ให้หลุดขอบ
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 1400, width: 1400, scrollX: 0, scrollY: 0 }, 
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
             setTimeout(() => {
                 html2pdf().set(opt).from(pdfWrapper).save().then(() => {
-                    // 3. คืนค่า UI กลับมาให้เป็นปกติหลังจากสร้าง PDF เสร็จ
                     if (document.body.contains(pdfWrapper)) {
                         document.body.removeChild(pdfWrapper);
                     }
-                    appContainer.style.display = 'flex'; 
                     overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
                     overlay.style.display = 'none';
                     Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
@@ -1283,12 +1282,11 @@
                     if (document.body.contains(pdfWrapper)) {
                         document.body.removeChild(pdfWrapper);
                     }
-                    appContainer.style.display = 'flex';
                     overlay.style.backgroundColor = 'rgba(255,255,255,0.85)';
                     overlay.style.display = 'none';
                     Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
                 });
-            }, 800); // เผื่อเวลาให้เบราว์เซอร์เตรียมภาพป้องกันแหว่ง
+            }, 800); // เพิ่มเวลาหน่วงเล็กน้อยเพื่อให้แน่ใจว่าหน้าเว็บวาด DOM เสร็จสมบูรณ์
         }
 
         /* --- API HELPER FUNCTIONS --- */
