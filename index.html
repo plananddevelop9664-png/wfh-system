@@ -230,6 +230,7 @@
             width: 100%;
             margin-bottom: 0;
             background: white;
+            table-layout: fixed; /* บังคับ layout ป้องกันล้นขอบ */
         }
         .report-table th, .report-table td {
             text-align: center;
@@ -237,6 +238,7 @@
             border: 1px solid #e9ecef;
             padding: 10px 15px;
             font-size: 0.95rem;
+            word-wrap: break-word;
         }
         .report-table thead th {
             background-color: var(--sweet-pink);
@@ -253,6 +255,7 @@
             color: var(--sweet-pink);
         }
         .summary-row td { background-color: #fff5f8 !important; }
+        .day-check { color: var(--status-success); font-weight: bold; font-size: 1.2rem; }
         
         /* Signature Styles */
         .signature-upload {
@@ -904,7 +907,7 @@
             const [yearStr, monthStr] = yyyy_mm.split('-');
             const year = parseInt(yearStr); const month = parseInt(monthStr);
 
-            let html = `<table class="table report-table" id="export-report-table" style="width: 100%;">
+            let html = `<table class="table report-table" id="export-report-table" style="width: 100%; table-layout: fixed;">
                 <thead>
                     <tr>
                         <th style="width: 10%; text-align: center;">ลำดับที่</th>
@@ -1121,6 +1124,16 @@
                 tbl.style.borderCollapse = 'collapse';
             }
             
+            // ดึง <th> ทั้งหมดมากำหนดความกว้างตามสัดส่วน % ให้ชัดเจน เพื่อให้ html2pdf ล็อกคอลัมน์ไม่ให้ดิ้น
+            const ths = tbl.querySelectorAll('th');
+            if (ths.length === 5) {
+                ths[0].style.width = '10%';
+                ths[1].style.width = '30%';
+                ths[2].style.width = '20%';
+                ths[3].style.width = '30%';
+                ths[4].style.width = '10%';
+            }
+
             const allCells = tbl.querySelectorAll('th, td');
             allCells.forEach((cell) => { 
                 const existingColor = cell.style.color; 
@@ -1217,6 +1230,7 @@
             pdfWrapper.style.top = '0';
             pdfWrapper.style.left = '0';
             pdfWrapper.style.width = '794px'; 
+            pdfWrapper.style.minHeight = '1123px';
             pdfWrapper.style.zIndex = '9998'; 
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '40px'; 
@@ -1238,7 +1252,7 @@
             document.body.appendChild(pdfWrapper);
 
             const opt = {
-                margin: 0, 
+                margin: 0, // ป้องกันขอบซ้อนทับที่ทำให้แหว่งขวา เราใช้ padding จาก container ด้านบนแทน
                 filename: `WFH_Report_${monthInput}.pdf`,
                 image: { type: 'jpeg', quality: 1.0 }, 
                 // บังคับสัดส่วนการเรนเดอร์ให้ล็อคติดอยู่กับความกว้าง A4 เป๊ะๆ
