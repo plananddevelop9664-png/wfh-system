@@ -951,7 +951,7 @@
         }
 
         // =========================================================
-        // โซน PDF EXPORT (แคปเจอร์จากหน้าจอโดยตรง แก้อาการหน้าขาว 100%)
+        // โซน PDF EXPORT (แก้ตารางโดนตัดขอบ และจัดกึ่งกลาง 100%)
         // =========================================================
         function previewPDF() {
             const tableContainer = document.getElementById("report-table-container");
@@ -967,7 +967,8 @@
             if(tbl) { 
                 tbl.classList.remove('report-table');
                 tbl.style.width = '100%'; 
-                tbl.style.tableLayout = 'auto';
+                // บังคับ Fixed Layout ให้เคารพสัดส่วน % ของคอลัมน์อย่างเคร่งครัด ไม่ล้นขอบ
+                tbl.style.tableLayout = 'fixed'; 
                 tbl.style.borderCollapse = 'collapse';
             }
             
@@ -981,6 +982,9 @@
                 cell.style.padding = '8px 5px';
                 cell.style.border = '1px solid #000'; 
                 cell.style.backgroundColor = '#ffffff';
+                // ยอมให้ข้อความขึ้นบรรทัดใหม่ได้ ป้องกันคอลัมน์ขยายจนแหว่ง
+                cell.style.whiteSpace = 'normal'; 
+                cell.style.wordWrap = 'break-word';
                 cell.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
                 if (!existingColor) {
                     cell.style.color = '#000000';
@@ -1017,9 +1021,9 @@
                 </tr>
             </table>`;
             
-            // หน้าต่าง Preview ขนาดกระดาษ A4 แนวตั้ง (800px) เพิ่ม id="pdf-capture-target"
+            // หน้าต่าง Preview
             const previewHtml = `<div style="background: #525659; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
-                <div id="pdf-capture-target" style="width: 800px; min-width: 800px; background: white; padding: 40px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); margin: 0 auto; box-sizing: border-box;">
+                <div id="pdf-preview-target" style="width: 800px; min-width: 800px; background: white; padding: 40px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); margin: 0 auto; box-sizing: border-box;">
                     <div style="width: 100%; text-align: center; margin-bottom: 20px;">
                         ${titleHtml}
                     </div>
@@ -1042,22 +1046,42 @@
                 confirmButtonText: '<i class="fas fa-file-pdf"></i> ยืนยันดาวน์โหลด PDF',
                 cancelButtonText: 'ปิดพรีวิว',
                 preConfirm: () => {
-                    Swal.showLoading(); // แสดงสถานะโหลดบนปุ่ม
+                    Swal.showLoading();
                     return new Promise((resolve) => {
-                        // แคปเจอร์ภาพจาก Element ที่ตาเรามองเห็นใน SweetAlert เลย (แก้หน้าขาว 100%)
-                        const target = document.getElementById('pdf-capture-target');
+                        
+                        // เทคนิคแก้แหว่ง: ก๊อปปี้ Element มาวางบน Body หลักเพื่อหลีกเลี่ยงการถูก Overflow ของ Preview ตัดทิ้ง
+                        const previewTarget = document.getElementById('pdf-preview-target');
+                        const captureContainer = document.createElement('div');
+                        captureContainer.innerHTML = previewTarget.innerHTML;
+                        
+                        // ตั้งค่าพิกัดจำลองให้เหมือน A4 และลอยทับทุกอย่างบนจอ แต่ให้ซ่อนไว้ใต้ Modal ของ SweetAlert (z-index: 1000)
+                        captureContainer.style.position = 'absolute';
+                        captureContainer.style.top = '0';
+                        captureContainer.style.left = '0';
+                        captureContainer.style.width = '800px'; 
+                        captureContainer.style.backgroundColor = '#ffffff';
+                        captureContainer.style.padding = '40px';
+                        captureContainer.style.boxSizing = 'border-box';
+                        captureContainer.style.color = '#000000';
+                        captureContainer.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
+                        captureContainer.style.zIndex = '1000';
+                        
+                        document.body.appendChild(captureContainer);
+
                         const opt = {
                             margin: 0.4, 
                             filename: `WFH_Report_${monthInput}.pdf`,
                             image: { type: 'jpeg', quality: 1.0 }, 
-                            html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 }, 
+                            html2canvas: { scale: 2, useCORS: true, windowWidth: 800, width: 800, scrollX: 0, scrollY: 0 }, 
                             pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
                             jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
                         };
 
-                        html2pdf().set(opt).from(target).save().then(() => {
+                        html2pdf().set(opt).from(captureContainer).save().then(() => {
+                            document.body.removeChild(captureContainer);
                             resolve(true);
                         }).catch(err => {
+                            document.body.removeChild(captureContainer);
                             Swal.showValidationMessage('เกิดข้อผิดพลาด: ' + err);
                             resolve(false);
                         });
