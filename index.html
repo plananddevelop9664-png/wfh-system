@@ -1310,7 +1310,7 @@
                 allowOutsideClick: false,
                 showConfirmButton: false,
                 // 💡 ปรับพื้นหลังให้เป็นสีขาวทึบ 100% เพื่อซ่อนตารางที่กางอยู่ด้านหลังไม่ให้ผู้ใช้เห็น
-                backdrop: false;
+                backdrop: false,
                 didOpen: () => { Swal.showLoading(); }
             });
             
@@ -1370,15 +1370,26 @@
 
             // 💡 ใช้ requestAnimationFrame ควบคู่กับ setTimeout เพื่อให้เบราว์เซอร์เตรียมกราฟิก 100%
             requestAnimationFrame(() => {
-    html2pdf().set(opt).from(pdfWrapper).save()
-        .then(() => {
-            if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-            Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
-        })
-        .catch(err => {
-            if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-            Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
-        });
+    setTimeout(() => {
+        html2pdf().set(opt).from(pdfWrapper).save()
+            .then(() => {
+                if (document.body.contains(pdfWrapper)) {
+                    document.body.removeChild(pdfWrapper);
+                }
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ',
+                    text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ',
+                    confirmButtonColor: '#20c997'
+                });
+            })
+            .catch(err => {
+                if (document.body.contains(pdfWrapper)) {
+                    document.body.removeChild(pdfWrapper);
+                }
+                Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
+            });
+    }, 100); // 🔥 sweet spot
 });
         }
 
