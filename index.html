@@ -336,6 +336,20 @@
             .process-flow { max-width: 200px; }
             .flow-icon { width: 26px; height: 26px; font-size: 11px; }
             .process-flow::before { top: 11px; }
+            /* แก้ไขปัญหาช่องเปอร์เซ็นต์โดนบีบใน PDF */
+            .report-table td, .report-table th {
+                white-space: nowrap !important; /* ห้ามตัดบรรทัด */
+                padding: 4px 2px !important;    /* ลด Padding ซ้ายขวาให้เหลือพื้นที่มากขึ้น */
+                min-width: 35px;                /* กำหนดความกว้างขั้นต่ำให้เพียงพอสำหรับ 100% */
+            }
+
+            /* ปล่อยให้คอลัมน์ชื่อและตำแหน่งตัดบรรทัดได้ปกติเพื่อไม่ให้ตารางกว้างเกินไป */
+            .report-table td:nth-child(2), 
+            .report-table td:nth-child(3) {
+                white-space: normal !important;
+                word-break: break-word;
+                min-width: 120px;
+            }
         }
     </style>
 </head>
