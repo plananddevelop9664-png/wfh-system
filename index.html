@@ -1310,7 +1310,7 @@
                 allowOutsideClick: false,
                 showConfirmButton: false,
                 // 💡 ปรับพื้นหลังให้เป็นสีขาวทึบ 100% เพื่อซ่อนตารางที่กางอยู่ด้านหลังไม่ให้ผู้ใช้เห็น
-                backdrop: `rgba(255,255,255,1)`, 
+                backdrop: false;
                 didOpen: () => { Swal.showLoading(); }
             });
             
@@ -1330,7 +1330,7 @@
             pdfWrapper.style.left = '0';
             pdfWrapper.style.width = '100%';
             pdfWrapper.style.maxWidth = '800px'; // ขนาดพอดี A4 แนวตั้ง (Portrait) ของ 5 คอลัมน์
-            pdfWrapper.style.zIndex = '9998'; 
+            pdfWrapper.style.zIndex = '20000';
             pdfWrapper.style.backgroundColor = '#ffffff';
             pdfWrapper.style.padding = '40px'; 
             pdfWrapper.style.boxSizing = 'border-box';
@@ -1370,16 +1370,16 @@
 
             // 💡 ใช้ requestAnimationFrame ควบคู่กับ setTimeout เพื่อให้เบราว์เซอร์เตรียมกราฟิก 100%
             requestAnimationFrame(() => {
-                setTimeout(() => {
-                    html2pdf().set(opt).from(pdfWrapper).save().then(() => {
-                        if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-                        Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
-                    }).catch(err => {
-                        if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-                        Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
-                    });
-                }, 200); // ดีเลย์จิ๊ดนึงให้ชัวร์ว่าวาดเสร็จ
-            });
+    html2pdf().set(opt).from(pdfWrapper).save()
+        .then(() => {
+            if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+            Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
+        })
+        .catch(err => {
+            if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+            Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
+        });
+});
         }
 
         /* --- API HELPER FUNCTIONS --- */
