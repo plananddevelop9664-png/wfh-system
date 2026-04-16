@@ -1304,101 +1304,83 @@
         }
 
         function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
-    Swal.fire({
-        title: 'กำลังสร้างเอกสาร PDF...',
-        html: 'กรุณารอสักครู่ ระบบกำลังประมวลผล',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => { Swal.showLoading(); }
-    });
-
-    const oldWrapper = document.getElementById('pdf-export-wrapper');
-    if (oldWrapper) document.body.removeChild(oldWrapper);
-
-    const pdfWrapper = document.createElement('div'); 
-    pdfWrapper.id = 'pdf-export-wrapper';
-
-    // ✅ FIX 1: ไม่โยนออกนอกจอแล้ว (แก้ blank page)
-    pdfWrapper.style.position = 'absolute';
-    pdfWrapper.style.top = '0';
-    pdfWrapper.style.left = '0';
-    pdfWrapper.style.visibility = 'hidden';
-
-    // ✅ FIX 2: ไม่ fix width แข็ง
-    pdfWrapper.style.width = '100%';
-    pdfWrapper.style.maxWidth = '1400px';
-
-    pdfWrapper.style.backgroundColor = '#ffffff';
-    pdfWrapper.style.padding = '40px'; 
-    pdfWrapper.style.boxSizing = 'border-box';
-    pdfWrapper.style.color = '#000000';
-    pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
-
-    pdfWrapper.innerHTML = `
-    <style>
-        table, tr, td {
-            page-break-inside: avoid !important;
-        }
-        td {
-            word-break: break-word;
-        }
-    </style>
-
-    <div style="width: 100%; text-align: center; margin-bottom: 20px;">
-        ${titleHtml}
-    </div>
-    <div style="width: 100%; margin-bottom: 20px;">
-        ${tableHtml}
-    </div>
-    <div style="width: 100%;">
-        ${sigHtml}
-    </div>
-`;
-
-    document.body.appendChild(pdfWrapper);
-
-    const opt = {
-        margin: [0.2, 0.2, 0.2, 0.2],
-        filename: `WFH_Report_${monthInput}.pdf`,
-        image: { type: 'jpeg', quality: 1.0 },
-
-        // ✅ FIX 3: เอา width/windowWidth ออก
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true 
-        },
-
-        // ✅ FIX 4: เพิ่ม pagebreak กันตารางขาด
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-    };
-
-    // ✅ FIX 5: ใช้ requestAnimationFrame แทน setTimeout
-    requestAnimationFrame(() => {
-        html2pdf()
-            .set(opt)
-            .from(pdfWrapper)
-            .save()
-            .then(() => {
-                if (document.body.contains(pdfWrapper)) {
-                    document.body.removeChild(pdfWrapper);
-                }
-                Swal.fire({
-                    icon: 'success',
-                    title: 'สำเร็จ',
-                    text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ',
-                    confirmButtonColor: '#20c997'
-                });
-            })
-            .catch(err => {
-                if (document.body.contains(pdfWrapper)) {
-                    document.body.removeChild(pdfWrapper);
-                }
-                Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
+            Swal.fire({
+                title: 'กำลังสร้างเอกสาร PDF...',
+                html: 'กรุณารอสักครู่ ระบบกำลังประมวลผล',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                // 💡 ปรับพื้นหลังให้เป็นสีขาวทึบ 100% เพื่อซ่อนตารางที่กางอยู่ด้านหลังไม่ให้ผู้ใช้เห็น
+                backdrop: `rgba(255,255,255,1)`, 
+                didOpen: () => { Swal.showLoading(); }
             });
-    });
-}
+            
+            // 💡 สั่ง Scroll หน้าจอไปบนสุด เพื่อไม่ให้ html2canvas จับภาพเพี้ยน
+            window.scrollTo(0, 0); 
+            
+            const oldWrapper = document.getElementById('pdf-export-wrapper');
+            if (oldWrapper) document.body.removeChild(oldWrapper);
+
+            const pdfWrapper = document.createElement('div'); 
+            pdfWrapper.id = 'pdf-export-wrapper';
+            
+            // 💡 วางตารางไว้บนสุดของจอตามปกติ แต่ถูก SweetAlert (z-index: 10600) บังเอาไว้
+            // html2canvas จะถ่ายภาพตรงนี้ได้ 100% แก้หน้าขาวหายขาด!
+            pdfWrapper.style.position = 'absolute';
+            pdfWrapper.style.top = '0';
+            pdfWrapper.style.left = '0';
+            pdfWrapper.style.width = '100%';
+            pdfWrapper.style.maxWidth = '800px'; // ขนาดพอดี A4 แนวตั้ง (Portrait) ของ 5 คอลัมน์
+            pdfWrapper.style.zIndex = '9998'; 
+            pdfWrapper.style.backgroundColor = '#ffffff';
+            pdfWrapper.style.padding = '40px'; 
+            pdfWrapper.style.boxSizing = 'border-box';
+            pdfWrapper.style.color = '#000000';
+            pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
+            
+            // 💡 นำโค้ด style ป้องกันหน้าขาดของคุณมาใช้งาน
+            pdfWrapper.innerHTML = `
+                <style>
+                    #pdf-export-wrapper table, #pdf-export-wrapper tr, #pdf-export-wrapper td {
+                        page-break-inside: avoid !important;
+                    }
+                    #pdf-export-wrapper td {
+                        word-break: break-word;
+                    }
+                </style>
+                <div style="width: 100%; text-align: center; margin-bottom: 20px;">
+                    ${titleHtml}
+                </div>
+                <div style="width: 100%; margin-bottom: 30px;">
+                    ${tableHtml}
+                </div>
+                <div style="width: 100%;">
+                    ${sigHtml}
+                </div>
+            `;
+            document.body.appendChild(pdfWrapper);
+
+            const opt = {
+                margin: [0.2, 0.2, 0.2, 0.2], 
+                filename: `WFH_Report_${monthInput}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 }, 
+                html2canvas: { scale: 2, useCORS: true }, // เอา windowWidth ออกตามที่คุณแนะนำ
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }, // ป้องกันตารางขาด
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+            };
+
+            // 💡 ใช้ requestAnimationFrame ควบคู่กับ setTimeout เพื่อให้เบราว์เซอร์เตรียมกราฟิก 100%
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    html2pdf().set(opt).from(pdfWrapper).save().then(() => {
+                        if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+                        Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
+                    }).catch(err => {
+                        if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+                        Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
+                    });
+                }, 200); // ดีเลย์จิ๊ดนึงให้ชัวร์ว่าวาดเสร็จ
+            });
+        }
 
         /* --- API HELPER FUNCTIONS --- */
         function createProcessFlowHTML(status) {
