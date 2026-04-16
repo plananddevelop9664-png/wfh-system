@@ -1323,16 +1323,16 @@
         html: 'กรุณารอสักครู่ ระบบกำลังประมวลผล',
         allowOutsideClick: false,
         showConfirmButton: false,
-        backdrop: true, // กลับมาใช้ backdrop ปกติได้เลยเพราะเราจะไม่ render ลงจอแล้ว
+        backdrop: true,
         didOpen: () => { Swal.showLoading(); }
     });
 
-    // 💡 จัดเตรียม HTML String แทนการสร้าง DOM Element แปะหน้าจอ
+    // 💡 จัดเตรียม HTML String
     const htmlContent = `
         <div style="
             width: 100%; 
-            max-width: 800px; 
-            padding: 40px; 
+            max-width: 1100px; /* 💡 เพิ่มความกว้างสูงสุดเพื่อให้พอดีกับแนวนอน */
+            padding: 20px; 
             box-sizing: border-box; 
             font-family: 'Sarabun', 'TH SarabunPSK', sans-serif;
             background-color: #ffffff;
@@ -1340,22 +1340,34 @@
             margin: 0 auto;
         ">
             <style>
-                /* 💡 แก้ปัญหาตารางขาดและหน้าขาว */
                 table {
                     width: 100%;
                     border-collapse: collapse;
+                    table-layout: auto; /* ให้ตารางคำนวณความกว้างตามเนื้อหา */
                 }
-                /* ให้ตารางแตกขึ้นหน้าใหม่ได้ */
                 table, tbody {
                     page-break-inside: auto !important;
                 }
-                /* แต่ห้ามตัดขาดกลางแถว (กลางบรรทัด) */
                 tr {
                     page-break-inside: avoid !important;
                     page-break-after: auto !important;
                 }
-                td {
-                    word-break: break-word;
+                
+                /* 💡 แก้ไขส่วนที่ตัวเลขโดนบีบ */
+                td, th {
+                    border: 1px solid #000; /* เติมเส้นขอบให้ชัดเจนสำหรับ PDF */
+                    padding: 4px 1px !important; /* ลด padding ซ้ายขวาให้เหลือน้อยที่สุด */
+                    text-align: center;
+                    white-space: nowrap !important; /* 🔥 ห้ามตัดบรรทัด เพื่อไม่ให้ % ตกไปข้างล่าง */
+                    font-size: 11px; /* ปรับขนาดฟอนต์ในตารางลงเล็กน้อยเพื่อให้ลงตัวในหน้าเดียว */
+                }
+
+                /* ปล่อยให้คอลัมน์ชื่อ-นามสกุล ขยายได้และตัดคำได้ปกติ */
+                td:nth-child(2) {
+                    white-space: normal !important;
+                    text-align: left;
+                    padding-left: 5px !important;
+                    min-width: 150px;
                 }
             </style>
             
@@ -1372,7 +1384,7 @@
     `;
 
     const opt = {
-        margin: [0.2, 0.2, 0.2, 0.2], 
+        margin: [0.3, 0.3, 0.3, 0.3], // เพิ่ม margin เล็กน้อยให้ดูสบายตา
         filename: `WFH_Report_${monthInput}.pdf`,
         image: { type: 'jpeg', quality: 1.0 }, 
         html2canvas: { 
@@ -1380,19 +1392,20 @@
             useCORS: true,
             letterRendering: true
         }, 
-        // 💡 เอา 'avoid-all' ออก ป้องกันบั๊กหน้าขาวเมื่อตารางยาว
         pagebreak: { mode: ['css', 'legacy'] }, 
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+        jsPDF: { 
+            unit: 'in', 
+            format: 'a4', 
+            orientation: 'landscape' // 🔥 เปลี่ยนเป็นแนวนอนเรียบร้อย
+        } 
     };
 
-    // 💡 ส่ง htmlContent (String) เข้าไปตรงๆ ได้เลย
-    // ไม่ต้องใช้ setTimeout แล้ว เพราะ html2pdf จัดการคิวเรนเดอร์ให้เอง
     html2pdf().set(opt).from(htmlContent).save()
         .then(() => {
             Swal.fire({
                 icon: 'success',
                 title: 'สำเร็จ',
-                text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ',
+                text: 'ดาวน์โหลดไฟล์ PDF แนวนอนเรียบร้อยแล้วค่ะ',
                 confirmButtonColor: '#20c997'
             });
         })
