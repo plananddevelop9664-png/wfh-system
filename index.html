@@ -226,33 +226,6 @@
             background: white;
             padding: 10px;
         }
-        .report-table {
-            width: 100%;
-            margin-bottom: 0;
-            background: white;
-        }
-        .report-table th, .report-table td {
-            text-align: center;
-            vertical-align: middle;
-            border: 1px solid #e9ecef;
-            padding: 10px 15px;
-            font-size: 0.95rem;
-        }
-        .report-table thead th {
-            background-color: var(--sweet-pink);
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-            font-weight: 500;
-        }
-        
-        .summary-row {
-            background-color: #fff5f8 !important;
-            font-weight: bold;
-            color: var(--sweet-pink);
-        }
-        .summary-row td { background-color: #fff5f8 !important; }
         
         /* Signature Styles */
         .signature-upload {
@@ -488,7 +461,7 @@
                     </div>
                 </div>
 
-                <!-- VIEW 4: REPORT (ตาราง WFH แบบใหม่ สรุปรายบุคคล) -->
+                <!-- VIEW 4: REPORT (ตาราง WFH ภาพรวมพนักงาน พร้อมลายเซ็น) -->
                 <div id="view-report" class="app-view">
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-body p-4">
@@ -855,7 +828,7 @@
             finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
-        /* --- REPORT LOGIC (ปรับตารางเป็นแนวตั้ง สรุปรายบุคคล) --- */
+        /* --- REPORT LOGIC --- */
         async function loadReportData() {
             const monthInput = document.getElementById('report-month-picker').value;
             if(!monthInput) return;
@@ -897,21 +870,29 @@
             }
         }
 
-        // --- เปลี่ยนตารางเป็นรูปแบบแนวตั้ง สรุปวันที่รายบุคคล ---
+        // =========================================================
+        // 1. เรนเดอร์หน้าจอเว็บ (ดีไซน์ Modern สมัยใหม่ ไร้เส้นขอบ มี Badge)
+        // =========================================================
         function renderReportTable(data, yyyy_mm) {
-            reportDataStore = data;
+            reportDataStore = data; // เก็บข้อมูลดิบไว้ใช้ตอน Export Excel
             const container = document.getElementById('report-table-container');
             const [yearStr, monthStr] = yyyy_mm.split('-');
-            const year = parseInt(yearStr); const month = parseInt(monthStr);
+            
+            // ล้างพื้นหลังเดิมของ container ให้กลืนกับ Card
+            container.style.background = 'transparent';
+            container.style.border = 'none';
+            container.style.boxShadow = 'none';
+            container.style.padding = '0';
 
-            let html = `<table class="table report-table" id="export-report-table" style="width: 100%;">
+            // ดีไซน์ตารางแบบ Modern: ซ่อนเส้นขอบ ใช้ spacing แยกแถว
+            let html = `<table class="table align-middle" id="export-report-table" style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
                 <thead>
-                    <tr>
-                        <th style="width: 10%; text-align: center;">ลำดับที่</th>
-                        <th style="width: 30%; text-align: left; padding-left: 15px;">ชื่อ - นามสกุล</th>
-                        <th style="width: 20%; text-align: center;">ตำแหน่ง</th>
-                        <th style="width: 30%; text-align: center;">วันที่ปฏิบัติงาน WFH</th>
-                        <th style="width: 10%; text-align: center;">รวม (วัน)</th>
+                    <tr style="background: linear-gradient(45deg, #ff758c, #ff7eb3); color: white; box-shadow: 0 4px 10px rgba(255,117,140,0.3);">
+                        <th style="width: 8%; text-align: center; padding: 15px; border-top-left-radius: 12px; border-bottom-left-radius: 12px; border:none;">ลำดับ</th>
+                        <th style="width: 25%; text-align: left; padding: 15px; border:none;">ชื่อ - นามสกุล</th>
+                        <th style="width: 20%; text-align: center; padding: 15px; border:none;">ตำแหน่ง</th>
+                        <th style="width: 35%; text-align: left; padding: 15px; border:none;">วันที่ WFH</th>
+                        <th style="width: 12%; text-align: center; padding: 15px; border-top-right-radius: 12px; border-bottom-right-radius: 12px; border:none;">รวม (วัน)</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -919,72 +900,250 @@
             let totalWfhDaysAll = 0;
 
             if (!data || data.length === 0) {
-                html += `<tr><td colspan="5" class="text-center text-muted py-4">ไม่พบข้อมูลพนักงานในระบบ</td></tr>`;
+                html += `<tr><td colspan="5" class="text-center text-muted py-5 bg-white" style="border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">ไม่พบข้อมูลพนักงานในเดือนนี้ 🌸</td></tr>`;
             } else {
                 data.forEach((emp, index) => {
-                    let wfhDaysStr = "-";
+                    let wfhDaysHtml = '<span class="text-muted">-</span>';
                     let wfhCount = 0;
                     if (emp.wfh_dates && emp.wfh_dates.length > 0) {
-                        // แปลงเป็นตัวเลขเรียงลำดับจากน้อยไปมาก
                         const sortedDates = emp.wfh_dates.map(d => parseInt(d, 10)).sort((a,b) => a - b);
-                        wfhDaysStr = sortedDates.join(', ');
+                        // แปลงตัวเลขวันที่เป็น Badge สไตล์ Modern
+                        wfhDaysHtml = sortedDates.map(d => `<span style="display:inline-block; background:#fff0f5; color:#ff758c; padding:4px 12px; border-radius:20px; margin:3px; font-size:0.85rem; font-weight:600; border: 1px solid #ffe4e1;">${d}</span>`).join('');
                         wfhCount = sortedDates.length;
                         totalWfhDaysAll += wfhCount;
                     }
 
-                    html += `<tr>
-                        <td class="text-center align-middle">${index + 1}</td>
-                        <td class="text-start align-middle" style="padding-left: 15px;">${emp.name}</td>
-                        <td class="text-center align-middle">${emp.position || '-'}</td>
-                        <td class="text-center align-middle" style="white-space: normal; word-break: break-word;">${wfhDaysStr}</td>
-                        <td class="text-center align-middle"><b>${wfhCount}</b></td>
+                    // สร้างอักษรย่อโปรไฟล์ (Avatar)
+                    const initial = emp.name ? emp.name.charAt(0) : '?';
+
+                    html += `<tr style="background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                        <td class="text-center fw-bold text-muted" style="border:none; border-top-left-radius: 12px; border-bottom-left-radius: 12px; padding: 15px;">${index + 1}</td>
+                        <td class="text-start fw-bold text-dark" style="border:none; padding: 15px;">
+                            <div class="d-flex align-items-center">
+                                <div style="width: 38px; height: 38px; border-radius: 50%; background: #ffe4e1; color: #ff758c; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; font-size: 1.1rem;">
+                                    ${initial}
+                                </div>
+                                ${emp.name}
+                            </div>
+                        </td>
+                        <td class="text-center text-secondary" style="border:none; padding: 15px;">${emp.position || '-'}</td>
+                        <td class="text-start" style="border:none; padding: 10px;">${wfhDaysHtml}</td>
+                        <td class="text-center" style="border:none; border-top-right-radius: 12px; border-bottom-right-radius: 12px; padding: 15px;">
+                            <span style="background: #20c997; color: white; padding: 6px 16px; border-radius: 12px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 6px rgba(32,201,151,0.3);">${wfhCount}</span>
+                        </td>
                     </tr>`;
                 });
             }
 
-            html += `<tr class="summary-row">
-                <td colspan="4" class="text-end" style="padding-right: 15px;">รวมจำนวนวัน Work From Home ทั้งหมดประจำเดือน (วัน)</td>
-                <td class="text-center"><b>${totalWfhDaysAll}</b></td>
+            // แถวสรุปผลรวม
+            html += `<tr style="background: #fff5f8;">
+                <td colspan="4" class="text-end text-primary fw-bold" style="padding: 20px 25px; border:none; border-top-left-radius: 12px; border-bottom-left-radius: 12px;">รวมจำนวนวัน Work From Home ทั้งหมดประจำเดือน (วัน)</td>
+                <td class="text-center" style="border:none; border-top-right-radius: 12px; border-bottom-right-radius: 12px; padding: 20px;"><b style="font-size: 1.3rem; color: #ff758c; background: white; padding: 5px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(255,117,140,0.2);">${totalWfhDaysAll}</b></td>
             </tr>`;
             html += `</tbody></table>`;
             container.innerHTML = html;
         }
 
         // =========================================================
-        // โซน PDF EXPORT (แคปเจอร์จากหน้าจอโดยตรง แก้อาการหน้าขาว 100%)
+        // 2. โซน EXCEL EXPORT (สร้างตารางคลาสสิกตีเส้นดำล้วน เพื่อให้ Excel อ่านง่าย 100%)
+        // =========================================================
+        function previewExcel() {
+            if(!reportDataStore || reportDataStore.length === 0) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
+
+            const monthInput = document.getElementById('report-month-picker').value;
+            if(!monthInput) return Swal.fire('แจ้งเตือน', 'กรุณาระบุเดือนก่อนครับ', 'warning');
+
+            const [y, m] = monthInput.split('-');
+            const monthName = thMonths[parseInt(m, 10) - 1] || '';
+            const titleText = `รายงานกำหนดการปฏิบัติงาน (กรณี WFH) ประจำเดือน ${monthName} ${parseInt(y, 10)+543}`;
+            const totalCols = 5; 
+
+            // สร้างตารางเฉพาะกิจสำหรับ Excel (ทิ้งดีไซน์ Modern เอาไว้แค่ Web)
+            let excelTableHtml = `<table border="1" style="width: 100%; border-collapse: collapse; font-family: 'TH SarabunPSK', 'Sarabun', sans-serif;">
+                <thead>
+                    <tr>
+                        <th style="border: 0.5pt solid black; padding: 8px; font-size: 14pt; text-align: center; background-color: #f0f0f0;">ลำดับที่</th>
+                        <th style="border: 0.5pt solid black; padding: 8px; font-size: 14pt; text-align: center; background-color: #f0f0f0;">ชื่อ - นามสกุล</th>
+                        <th style="border: 0.5pt solid black; padding: 8px; font-size: 14pt; text-align: center; background-color: #f0f0f0;">ตำแหน่ง</th>
+                        <th style="border: 0.5pt solid black; padding: 8px; font-size: 14pt; text-align: center; background-color: #f0f0f0;">วันที่ปฏิบัติงาน WFH</th>
+                        <th style="border: 0.5pt solid black; padding: 8px; font-size: 14pt; text-align: center; background-color: #f0f0f0;">รวม (วัน)</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            let sumDays = 0;
+            reportDataStore.forEach((emp, i) => {
+                let wfhText = "-";
+                let wfhCount = 0;
+                if (emp.wfh_dates && emp.wfh_dates.length > 0) {
+                    const sortedDates = emp.wfh_dates.map(d => parseInt(d, 10)).sort((a,b) => a - b);
+                    wfhText = sortedDates.join(', ');
+                    wfhCount = sortedDates.length;
+                    sumDays += wfhCount;
+                }
+                excelTableHtml += `<tr>
+                    <td style="border: 0.5pt solid black; padding: 5px; font-size: 14pt; text-align: center;">${i + 1}</td>
+                    <td style="border: 0.5pt solid black; padding: 5px; font-size: 14pt; text-align: left;">${emp.name}</td>
+                    <td style="border: 0.5pt solid black; padding: 5px; font-size: 14pt; text-align: center;">${emp.position || '-'}</td>
+                    <td style="border: 0.5pt solid black; padding: 5px; font-size: 14pt; text-align: left; mso-number-format:'\@';">${wfhText}</td>
+                    <td style="border: 0.5pt solid black; padding: 5px; font-size: 14pt; text-align: center; font-weight: bold;">${wfhCount}</td>
+                </tr>`;
+            });
+
+            excelTableHtml += `<tr>
+                <td colspan="4" style="border: 0.5pt solid black; padding: 5px; font-size: 14pt; text-align: right; font-weight: bold;">รวมจำนวนวัน Work From Home ทั้งหมดประจำเดือน (วัน)</td>
+                <td style="border: 0.5pt solid black; padding: 5px; font-size: 14pt; text-align: center; font-weight: bold;">${sumDays}</td>
+            </tr></tbody></table>`;
+            
+            const mName = document.getElementById('sig-manager-name').value || '......................................';
+            const mPos = document.getElementById('sig-manager-position').value || 'ผู้บังคับบัญชา';
+            const mDate = document.getElementById('sig-manager-date').value || '.........................';
+            
+            const sName = document.getElementById('sig-staff-name').value || '......................................';
+            const sPos = document.getElementById('sig-staff-position').value || 'ผู้ปฏิบัติงาน';
+            const sDate = document.getElementById('sig-staff-date').value || '.........................';
+
+            const mImgPdf = document.getElementById('sig-manager-img');
+            const mImgTag = (mImgPdf.style.display !== 'none' && mImgPdf.src) ? `<img src="${mImgPdf.src}" width="100" height="50">` : `<br><br>`;
+            
+            const sImgPdf = document.getElementById('sig-staff-img');
+            const sImgTag = (sImgPdf.style.display !== 'none' && sImgPdf.src) ? `<img src="${sImgPdf.src}" width="100" height="50">` : `<br><br>`;
+
+            const sigHtmlForPreview = `
+            <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 30px; font-family: 'Sarabun', sans-serif; font-size: 16px; background-color: #ffffff;">
+                <tr style="border: none;">
+                    <td style="width: 50%; text-align: center; border: none; color: #000;">
+                        ${mImgTag}<br><br>
+                        ลงชื่อ <b>${mName}</b><br>
+                        ตำแหน่ง ${mPos}<br>
+                        วันที่ ${mDate}
+                    </td>
+                    <td style="width: 50%; text-align: center; border: none; color: #000;">
+                        ${sImgTag}<br><br>
+                        ลงชื่อ <b>${sName}</b><br>
+                        ตำแหน่ง ${sPos}<br>
+                        วันที่ ${sDate}
+                    </td>
+                </tr>
+            </table>`;
+
+            const previewHtml = `
+            <div style="background: #107c41; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
+                <div style="width: 800px; min-width: 800px; background: white; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: left; color: black; font-family: 'Sarabun', sans-serif; box-sizing: border-box;">
+                    <h4 style="text-align: center; margin-bottom: 15px; color: #000; font-weight: bold; font-size: 20px;">${titleText}</h4>
+                    ${excelTableHtml}
+                    ${sigHtmlForPreview}
+                </div>
+            </div>`;
+
+            Swal.fire({
+                title: 'พรีวิวเอกสาร Excel',
+                html: previewHtml,
+                width: '95%',
+                showCancelButton: true,
+                confirmButtonColor: '#107c41',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-file-excel"></i> ยืนยันดาวน์โหลด Excel',
+                cancelButtonText: 'ปิดพรีวิว'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    generateAndDownloadExcel(titleText, excelTableHtml, totalCols, monthInput, mName, mPos, mDate, mImgTag, sName, sPos, sDate, sImgTag);
+                }
+            });
+        }
+
+        function generateAndDownloadExcel(titleText, tableOuterHtml, totalCols, monthInput, mName, mPos, mDate, mImgTag, sName, sPos, sDate, sImgTag) {
+            const excelHtml = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    @page { size: portrait; margin: 0.5in; }
+                    body { font-family: 'TH SarabunPSK', 'Sarabun', sans-serif; }
+                    table { border-collapse: collapse; width: 100%; }
+                    .no-border { border: none !important; }
+                    .title { font-size: 20px; font-weight: bold; border: none !important; text-align: center; }
+                    .sig-col { border: none !important; padding-top: 15px; text-align: center; vertical-align: bottom; }
+                </style>
+            </head>
+            <body>
+                <table>
+                    <tr><td colspan="${totalCols}" class="title">${titleText}</td></tr>
+                    <tr><td colspan="${totalCols}" class="no-border" style="height: 15px;"></td></tr>
+                </table>
+                ${tableOuterHtml}
+                <table>
+                    <tr><td colspan="${totalCols}" class="no-border" style="height: 30px;"></td></tr>
+                    <tr>
+                        <td colspan="2" class="sig-col">${mImgTag}</td>
+                        <td colspan="3" class="sig-col">${sImgTag}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="sig-col">ลงชื่อ <b>${mName}</b></td>
+                        <td colspan="3" class="sig-col">ลงชื่อ <b>${sName}</b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="no-border" style="text-align:center;">ตำแหน่ง ${mPos}</td>
+                        <td colspan="3" class="no-border" style="text-align:center;">ตำแหน่ง ${sPos}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="no-border" style="text-align:center;">วันที่ ${mDate}</td>
+                        <td colspan="3" class="no-border" style="text-align:center;">วันที่ ${sDate}</td>
+                    </tr>
+                </table>
+            </body>
+            </html>`;
+
+            const blob = new Blob(['\ufeff', excelHtml], { type: 'application/vnd.ms-excel' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `WFH_Report_${monthInput}.xls`; 
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // =========================================================
+        // 3. โซน PDF EXPORT (คงดีไซน์ Modern จัดเรียงสวยบนกระดาษ A4)
         // =========================================================
         function previewPDF() {
             const tableContainer = document.getElementById("report-table-container");
-            if(!tableContainer.innerHTML.trim()) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
+            if(!reportDataStore || reportDataStore.length === 0) return Swal.fire('ไม่พบข้อมูล', 'กรุณาเลือกเดือนที่มีข้อมูลก่อนครับ', 'warning');
             
             const monthInput = document.getElementById('report-month-picker').value;
-            const [y, m] = monthInput.split('-');
-            const titleHtml = `<h4 style="text-align: center; margin-bottom: 20px; color: #000; font-weight: bold; font-family: 'Sarabun', sans-serif; font-size: 22px;">รายงานกำหนดการปฏิบัติงาน (กรณี WFH) ประจำเดือน ${thMonths[parseInt(m)-1]} ${parseInt(y)+543}</h4>`;
+            if(!monthInput) return Swal.fire('แจ้งเตือน', 'กรุณาระบุเดือนก่อนครับ', 'warning');
 
+            const [y, m] = monthInput.split('-');
+            const monthName = thMonths[parseInt(m, 10) - 1] || '';
+            const titleHtml = `<h4 style="text-align: center; margin-bottom: 20px; color: #000; font-weight: bold; font-family: 'Sarabun', sans-serif; font-size: 22px;">รายงานกำหนดการปฏิบัติงาน (กรณี WFH) ประจำเดือน ${monthName} ${parseInt(y, 10)+543}</h4>`;
+
+            // ดึงเฉพาะ <table> มาเพื่อเตรียมแปลงสำหรับ PDF 
             const origTable = tableContainer.querySelector('table');
             const tbl = origTable.cloneNode(true);
             
             if(tbl) { 
                 tbl.classList.remove('report-table');
                 tbl.style.width = '100%'; 
-                tbl.style.tableLayout = 'auto';
-                tbl.style.borderCollapse = 'collapse';
+                tbl.style.tableLayout = 'fixed'; // บังคับไม่ให้ล้นขอบ A4
+                tbl.style.borderCollapse = 'separate';
+                tbl.style.borderSpacing = '0 6px';
             }
+
+            const allRows = tbl.querySelectorAll('tr');
+            allRows.forEach(tr => {
+                tr.style.boxShadow = 'none'; // ลบเงาออกใน PDF ให้ดูสะอาดขึ้น
+                tr.style.border = '1px solid #f0f0f0';
+            });
             
             const allCells = tbl.querySelectorAll('th, td');
             allCells.forEach((cell) => { 
-                const existingColor = cell.style.color; 
                 cell.style.position = 'static'; 
                 cell.style.left = 'auto'; 
                 cell.style.zIndex = 'auto';
-                cell.style.fontSize = '14px';
-                cell.style.padding = '8px 5px';
-                cell.style.border = '1px solid #000'; 
-                cell.style.backgroundColor = '#ffffff';
                 cell.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
-                if (!existingColor) {
-                    cell.style.color = '#000000';
-                }
+                // บังคับขึ้นบรรทัดใหม่
+                cell.style.whiteSpace = 'normal'; 
+                cell.style.wordBreak = 'break-word';
             });
             
             const mName = document.getElementById('sig-manager-name').value || '......................................';
@@ -1017,9 +1176,8 @@
                 </tr>
             </table>`;
             
-            // หน้าต่าง Preview ขนาดกระดาษ A4 แนวตั้ง (800px) เพิ่ม id="pdf-capture-target"
             const previewHtml = `<div style="background: #525659; padding: 20px; overflow-x: auto; display: flex; justify-content: center; max-height: 65vh; border-radius: 8px;">
-                <div id="pdf-capture-target" style="width: 800px; min-width: 800px; background: white; padding: 40px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); margin: 0 auto; box-sizing: border-box;">
+                <div style="width: 794px; min-width: 794px; background: white; padding: 40px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); margin: 0 auto; box-sizing: border-box;">
                     <div style="width: 100%; text-align: center; margin-bottom: 20px;">
                         ${titleHtml}
                     </div>
@@ -1040,34 +1198,76 @@
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: '<i class="fas fa-file-pdf"></i> ยืนยันดาวน์โหลด PDF',
-                cancelButtonText: 'ปิดพรีวิว',
-                preConfirm: () => {
-                    Swal.showLoading(); // แสดงสถานะโหลดบนปุ่ม
-                    return new Promise((resolve) => {
-                        // แคปเจอร์ภาพจาก Element ที่ตาเรามองเห็นใน SweetAlert เลย (แก้หน้าขาว 100%)
-                        const target = document.getElementById('pdf-capture-target');
-                        const opt = {
-                            margin: 0.4, 
-                            filename: `WFH_Report_${monthInput}.pdf`,
-                            image: { type: 'jpeg', quality: 1.0 }, 
-                            html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 }, 
-                            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-                            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
-                        };
-
-                        html2pdf().set(opt).from(target).save().then(() => {
-                            resolve(true);
-                        }).catch(err => {
-                            Swal.showValidationMessage('เกิดข้อผิดพลาด: ' + err);
-                            resolve(false);
-                        });
-                    });
-                }
+                cancelButtonText: 'ปิดพรีวิว'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
+                    // เปิดใช้งาน Loading ชั่วคราว
+                    Swal.fire({
+                        title: 'กำลังสร้างไฟล์ PDF',
+                        text: 'กรุณารอสักครู่...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    
+                    // หน่วงเวลาให้ UI วาดสมบูรณ์
+                    setTimeout(() => {
+                        generateAndDownloadPDF(titleHtml, tbl.outerHTML, sigHtmlForPdf, monthInput);
+                    }, 500);
                 }
             });
+        }
+
+        function generateAndDownloadPDF(titleHtml, tableHtml, sigHtml, monthInput) {
+            
+            const oldWrapper = document.getElementById('pdf-export-wrapper');
+            if (oldWrapper) document.body.removeChild(oldWrapper);
+
+            const pdfWrapper = document.createElement('div'); 
+            pdfWrapper.id = 'pdf-export-wrapper';
+            
+            // วางกรอบการทำงานในพิกัดลอยทับด้านขวาสุดๆ (-3000px) ป้องกันหน้าขาว และไม่กวนผู้ใช้
+            pdfWrapper.style.position = 'absolute';
+            pdfWrapper.style.top = '0';
+            pdfWrapper.style.left = '-3000px'; 
+            pdfWrapper.style.width = '794px'; 
+            pdfWrapper.style.minHeight = '1123px';
+            pdfWrapper.style.zIndex = '-9999'; 
+            pdfWrapper.style.backgroundColor = '#ffffff';
+            pdfWrapper.style.padding = '40px'; 
+            pdfWrapper.style.boxSizing = 'border-box';
+            pdfWrapper.style.color = '#000000';
+            pdfWrapper.style.fontFamily = "'Sarabun', 'TH SarabunPSK', sans-serif";
+            
+            pdfWrapper.innerHTML = `
+                <div style="width: 100%; text-align: center; margin-bottom: 20px;">
+                    ${titleHtml}
+                </div>
+                <div style="width: 100%; margin-bottom: 30px;">
+                    ${tableHtml}
+                </div>
+                <div style="width: 100%;">
+                    ${sigHtml}
+                </div>
+            `;
+            document.body.appendChild(pdfWrapper);
+
+            const opt = {
+                margin: 0, 
+                filename: `WFH_Report_${monthInput}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 }, 
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 800, width: 800, scrollX: 0, scrollY: 0 }, 
+                jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+            };
+
+            setTimeout(() => {
+                html2pdf().set(opt).from(pdfWrapper).save().then(() => {
+                    if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+                    Swal.fire({icon: 'success', title: 'สำเร็จ', text: 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้วค่ะ', confirmButtonColor: '#20c997'});
+                }).catch(err => {
+                    if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+                    Swal.fire('Error', 'เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message, 'error');
+                });
+            }, 300); 
         }
 
         /* --- API HELPER FUNCTIONS --- */
